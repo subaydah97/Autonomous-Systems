@@ -1,0 +1,90 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/vehicles/protos/abstract/VehicleWheel.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.0802270026101241 -0.5995501559105747 0.7963059955819752 5.950249568555314
+  position -1.228011855523406 0.046414201339616795 0.23426563665870537
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+}
+Robot {
+  translation 1 1 1
+  children [
+    Emitter {
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 1
+        roughness 0.5
+      }
+      geometry Sphere {
+        radius 0.1
+      }
+    }
+  ]
+  name "beacon_Alpha"
+}
+Robot {
+  translation 0 0 0.1
+  children [
+    Pose {
+      translation 0 -0.04 0
+      children [
+        Slot {
+          endPoint VehicleWheel {
+            name "vehicle wheel(2)"
+            thickness 0.03
+            tireRadius 0.07
+            rimRadius 0.06
+            rimBeamWidth 0.01
+            centralInnerRadius 0.009
+            centralOuterRadius 0.013
+            rimBeamThickness 0.02
+            rimBeamOffset 0.003
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0.04 0
+      children [
+        Slot {
+          endPoint VehicleWheel {
+            name "vehicle wheel(1)"
+            thickness 0.03
+            tireRadius 0.07
+            rimRadius 0.06
+            rimBeamWidth 0.01
+            centralInnerRadius 0.009
+            centralOuterRadius 0.013
+            rimBeamThickness 0.02
+            rimBeamOffset 0.003
+          }
+        }
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.2 0.8
+        roughness 0.5
+        metalness 0
+      }
+      geometry Box {
+        size 0.1 0.05 0.05
+      }
+    }
+    Compass {
+    }
+  ]
+  name "chariot"
+}
