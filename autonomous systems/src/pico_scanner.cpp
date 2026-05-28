@@ -2,6 +2,9 @@
 #include <BTstackLib.h> // using BTstack as the Bluetooth stack implementation
 #include <SPI.h>        // required by BTstack for SPI communication with the Bluetooth controller
 
+#define BEACON_PREFIX "MyBeacon"
+#define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length of the beacon prefix string, excluding the null terminator
+
 static bool parse_name(const uint8_t *data, uint8_t max_len, char *out, uint8_t out_size) // parse the device name from the BLE advertisement data, returns true if a name was found and copied to out
 {
     int i = 0;
@@ -36,7 +39,10 @@ void advertisementCallback(BLEAdvertisement *adv) // callback function that is c
     if (!parse_name(data, 31, name, sizeof(name)))
         return;
 
-    Serial.print("Device: ");
+    if (strncmp(name, BEACON_PREFIX, BEACON_PREFIX_LEN) != 0) // check if the device name starts with the expected beacon prefix, if not ignore this advertisement
+        return;
+    
+    Serial.print("Beacon found: ");
     Serial.print(name);
     Serial.print("  RSSI: ");
     Serial.println(adv->getRssi());

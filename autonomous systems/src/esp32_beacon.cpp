@@ -2,10 +2,12 @@
 #include <NimBLEDevice.h> // using NimBLE-Arduino library for BLE functionality
 
 #define BEACON_NAME "MyBeacon" // name for the esp beacon add 1 2 3 when using other beacons
+#define LED_PIN 2              // built-in LED pin for ESP32, will blink to indicate status
 
 void setup()
 {
     Serial.begin(115200);
+    pinMode(LED_PIN, OUTPUT);
     delay(1000);
     Serial.println("ESP32 BLE Beacon starting...");
 
@@ -17,13 +19,40 @@ void setup()
 
     pAdvertising->setAdvertisementType(BLE_GAP_CONN_MODE_NON); // set the advertising type to non-connectable (beacon mode)
 
-    pAdvertising->start(); // start advertising
+    bool started = pAdvertising->start(0); // start advertising with no timeout (0 means advertise indefinitely until stop is called)
 
-    Serial.print("Broadcasting as: ");
-    Serial.println(BEACON_NAME);
+    if (started)
+    {
+        // 3 fast blinks = broadcasting
+        for (int i = 0; i < 3; i++)
+        {
+            digitalWrite(LED_PIN, HIGH);
+            delay(200);
+            digitalWrite(LED_PIN, LOW);
+            delay(200);
+        }
+        Serial.print("Broadcasting as: ");
+        Serial.println(BEACON_NAME);
+    }
+    else
+    {
+        // 10 rapid blinks = failed to start
+        for (int i = 0; i < 10; i++)
+        {
+            digitalWrite(LED_PIN, HIGH);
+            delay(100);
+            digitalWrite(LED_PIN, LOW);
+            delay(100);
+        }
+        Serial.println("Failed to start advertising!");
+    }
 }
 
 void loop()
 {
-    delay(1000); // do nothing, the beacon is advertising in the background
+    // slow blink = alive and broadcasting
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+    delay(1000);
 }
