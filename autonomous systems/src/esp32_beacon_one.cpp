@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h> // using NimBLE-Arduino library for BLE functionality
 
-#define BEACON_NAME "MyBeacon" // name for the esp beacon add 1 2 3 when using other beacons
+#define BEACON_NAME "ForestBeaconOne" // name for the esp beacon add 1 2 3 when using other beacons
 #define LED_PIN 2              // built-in LED pin for ESP32, will blink to indicate status
 
 void setup()

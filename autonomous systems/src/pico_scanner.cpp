@@ -2,7 +2,7 @@
 #include <BTstackLib.h> // using BTstack as the Bluetooth stack implementation
 #include <SPI.h>        // required by BTstack for SPI communication with the Bluetooth controller
 
-#define BEACON_PREFIX "MyBeacon"
+#define BEACON_PREFIX "ForestBeacon" // prefix for the beacon names to filter in the scanner, should match the names used by the ESP32 beacons
 #define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length of the beacon prefix string, excluding the null terminator
 
 static bool parse_name(const uint8_t *data, uint8_t max_len, char *out, uint8_t out_size) // parse the device name from the BLE advertisement data, returns true if a name was found and copied to out
@@ -14,7 +14,7 @@ static bool parse_name(const uint8_t *data, uint8_t max_len, char *out, uint8_t 
         if (chunk_len == 0)
             break;
         if (i + chunk_len > max_len)
-            break;
+            break;  
 
         uint8_t chunk_type = data[i + 1];
         if (chunk_type == 0x09 || chunk_type == 0x08)
