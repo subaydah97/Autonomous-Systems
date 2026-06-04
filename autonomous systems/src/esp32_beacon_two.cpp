@@ -13,6 +13,8 @@ void setup()
 
     NimBLEDevice::init(BEACON_NAME); // init nimble stack with the device name
 
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9); // set maximum power level for strong signal)
+
     NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising(); // create advertising object and set params
 
     pAdvertising->setName(BEACON_NAME); // set the name of the device to be advertised

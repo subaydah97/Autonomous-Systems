@@ -2,7 +2,7 @@
 #include <NimBLEDevice.h> // using NimBLE-Arduino library for BLE functionality
 
 #define BEACON_NAME "ForestBeaconOne" // name for the esp beacon add 1 2 3 when using other beacons
-#define LED_PIN 2              // built-in LED pin for ESP32, will blink to indicate status
+#define LED_PIN 2                     // built-in LED pin for ESP32, will blink to indicate status
 
 void setup()
 {
@@ -12,6 +12,8 @@ void setup()
     Serial.println("ESP32 BLE Beacon starting...");
 
     NimBLEDevice::init(BEACON_NAME); // init nimble stack with the device name
+
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9); // set maximum power level for strong signal)
 
     NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising(); // create advertising object and set params
 
