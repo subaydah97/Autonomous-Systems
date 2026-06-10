@@ -6,13 +6,14 @@
 #define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length of the beacon prefix string, excluding the null terminator
 
 // beacon `coordinates` in the environment, used for later localization calculations
-const float BX[3] = {0.0f, 0.0f, 98.0f};
-const float BY[3] = {0.0f, 98.0f, 98.0f};
+const float BX[3] = {0.0f, 100.0f, 50.0f};   
+const float BY[3] = {0.0f, 0.0f, 100.0f}; 
 
 // calibrated 1-unit baseline transmission powers
 // these values allow the log-distance path loss equation to calculate the correct distance 
-const float TX_POWER[3] = {-7.48f, -11.98f, -9.08f}; //use calibration code from tx_power_calibration.cpp to find these values 
-const float ALPHA = 0.15f;                        // smoothing factor for the exponential moving average filter applied to RSSI values, decrease if the position jumps too much, increase if it lags behind
+const float TX_POWER[3] = {-15.24f, -18.74f, -13.47f};//use calibration code from tx_power_calibration.cpp to find these values 
+const float ALPHA = 0.08f;                        // smoothing factor for the exponential moving average filter applied to RSSI values, decrease if the position jumps too much, increase if it lags behind
+const float n = 2.5f;                             // path loss exponent for distance calculation
 float rssi_avg[3] = {-100.0f, -100.0f, -100.0f}; // array to store the smoothed RSSI values for each beacon
 bool seen[3] = {false, false, false};            // array to track whether each beacon has been seen at least once
 
@@ -39,9 +40,9 @@ struct Kalman2D
             for (int j = 0; j < 4; j++)
                 P[i][j] = (i == j) ? 500.0f : 0.0f;
 
-        Q_pos = 0.5f; // decrease if position jumps too much, decrease if it lags
-        Q_vel = 0.5f;
-        R = 30.0f; 
+        Q_pos = 0.1f; // decrease if position jumps too much, decrease if it lags
+        Q_vel = 0.1f;
+        R = 80.0f; 
 
         initialised = true;
         last_ms = millis();
@@ -142,11 +143,11 @@ struct Kalman2D
 
 static int beacon_index(const char *name)
 {
-    if (strcmp(name, "ForestBeaconOne") == 0)
+    if (strcmp(name, "ForestBeaconZero") == 0)
         return 0;
-    if (strcmp(name, "ForestBeaconTwo") == 0)
+    if (strcmp(name, "ForestBeaconOne") == 0)
         return 1;
-    if (strcmp(name, "ForestBeaconThree") == 0)
+    if (strcmp(name, "ForestBeaconTwo") == 0)
         return 2;
     return -1;
 }
@@ -248,8 +249,8 @@ void advertisementCallback(BLEAdvertisement *adv)
     kf.update(tx, ty);
 
     // clamp inside your physical boundary lines and print
-    float fx = fmaxf(0.0f, fminf(98.0f, kf.x));
-    float fy = fmaxf(0.0f, fminf(98.0f, kf.y));
+    float fx = fmaxf(0.0f, fminf(100.0f, kf.x));
+    float fy = fmaxf(0.0f, fminf(100.0f, kf.y));
 
     Serial.print("raw=(");
     Serial.print(tx, 1);

@@ -3,11 +3,11 @@
 #include <SPI.h>
 
 // change based on where pico is and how big field is 
-const float PICO_X = 49.0f; 
-const float PICO_Y = 49.0f; 
+const float PICO_X = 50.0f; 
+const float PICO_Y = 50.0f; 
 
-const float BX[3] = {0.0f, 0.0f, 98.0f};   
-const float BY[3] = {0.0f, 98.0f, 98.0f};  
+const float BX[3] = {0.0f, 100.0f, 50.0f};   
+const float BY[3] = {0.0f, 0.0f, 100.0f};  
 const float n = 2.5f;                       
 
 #define BEACON_PREFIX "ForestBeacon"
@@ -19,9 +19,9 @@ int rssi_count[3] = {0, 0, 0};
 bool calibration_done = false;
 
 static int beacon_index(const char *name) { // returns the index of the beacon based on its name, or -1 if the name doesn't match any known beacons
-    if (strcmp(name, "ForestBeaconOne") == 0)   return 0;
-    if (strcmp(name, "ForestBeaconTwo") == 0)   return 1;
-    if (strcmp(name, "ForestBeaconThree") == 0) return 2;
+    if (strcmp(name, "ForestBeaconZero") == 0)   return 0;
+    if (strcmp(name, "ForestBeaconOne") == 0)   return 1;
+    if (strcmp(name, "ForestBeaconTwo") == 0) return 2;
     return -1;
 }
 
