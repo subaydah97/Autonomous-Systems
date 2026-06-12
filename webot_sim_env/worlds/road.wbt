@@ -20,8 +20,8 @@ RectangleArena {
   wallHeight 0.001
 }
 chariot {
-  name "beta"
   translation 0 0.37 0.09
+  name "2"
 }
 Robot {
   translation 1 1 1
@@ -46,6 +46,6 @@ Robot {
   supervisor TRUE
 }
 chariot {
-  name "alpha"
   translation 0 0 0.09
+  name "1"
 }
