@@ -47,5 +47,8 @@ Robot {
 }
 chariot {
   translation 0 0 0.09
-  name "1"
+  name "3"
+  turret_position_horizontal 10
+  turret_position_vertical 1
+  wheel_position_left 22
 }

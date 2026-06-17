@@ -17,7 +17,7 @@
   ]
   
   {
-Robot {
+ Robot {
   translation IS translation
   rotation IS rotation
   children [
