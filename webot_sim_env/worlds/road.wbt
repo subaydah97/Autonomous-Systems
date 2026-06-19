@@ -43,6 +43,7 @@ Robot {
 }
 Robot {
   name "Supervisor"
+  controller "superVisor"
   supervisor TRUE
 }
 chariot {
