@@ -55,4 +55,5 @@ chariot {
 }
 Robot {
   name "mqttTelemtryReceptionTestBot"
+  controller "telemetryTest"
 }
