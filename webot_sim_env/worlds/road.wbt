@@ -53,3 +53,6 @@ chariot {
   turret_position_vertical 1
   wheel_position_left 22
 }
+Robot {
+  name "mqttTelemtryReceptionTestBot"
+}

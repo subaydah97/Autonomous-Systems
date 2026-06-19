@@ -3,16 +3,10 @@
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, Motor, DistanceSensor
 from controller import Supervisor
-
-# create the Robot instance.
-supervisor = Supervisor()
-
-rootNode = supervisor.getRoot()  # get root of the scene tree
-rootChildrenField = rootNode.getField('children')
-
-# rootChildrenField.importMFNodeFromString(-1, "{}")
-
 import paho.mqtt.client as mqtt
+
+# All the robots ids in the simmulation
+robots = []
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -23,14 +17,40 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-    print(msg.topic+" "+str(msg.payload))
+    #print(msg.topic+" "+str(msg.payload))
+    extract_botID(msg)
+    
+# Extracts the botID as integer
+def extract_botID(msg):
+    # decode msg payload
+    txt = msg.topic
+    
+    # Locate the first delimiter, "/"
+    delim = [txt.find("/")]
+    delim.append(txt.find("/", delim[-1]))
+    botID = txt[delim[0]+1:]
+    print(f"{txt}  botID:({botID}) delim{delim}")
+    
+# Handles adding new robots to the simulation
+def add_chariot(msg):
+    print(f"Supervisor adding new robot to payload")
+    # rootChildrenField.importMFNodeFromString(-1, "{}")
+    
+# create the Robot instance.
+supervisor = Supervisor()
 
+rootNode = supervisor.getRoot()  # get root of the scene tree
+rootChildrenField = rootNode.getField('children')
 
+# Setup mqtt client, and it's callbacks
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
 mqttc.on_message = on_message
 
 mqttc.connect("localhost", 1883, 60)
+# Starts a background thread for managing the network loop.
+## Prevents slowing the simulation down by multi threading. Chosen for processing speed, at th cost of required computational power.
+mqttc.loop_start()
 
 # https://cyberbotics.com/doc/reference/supervisor?tab-language=python#wb_supervisor_field_set_sf_float
 # https://cyberbotics.com/doc/reference/supervisor?tab-language=python#wb_supervisor_field_import_mf_node_from_string
@@ -53,7 +73,7 @@ timestep = int(supervisor.getBasicTimeStep())
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
 while supervisor.step(timestep) != -1:
-    mqttc.loop()
+
     # Read the sensors:
     # Enter here functions to read sensor data, like:
     #  val = ds.getValue()
@@ -63,5 +83,5 @@ while supervisor.step(timestep) != -1:
     # Enter here functions to send actuator commands, like:
     #  motor.setPosition(10.0)
     pass
-
+mqttc.loop_stop()
 # Enter here exit cleanup code.
