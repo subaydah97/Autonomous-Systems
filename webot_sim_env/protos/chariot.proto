@@ -6,8 +6,7 @@
  
     field SFString name "defaultName"
     field SFString controller "./topath"
-    field SFString controller_arguments ""
-   
+    
     field SFFloat turret_position_horizontal 0
     field SFFloat turret_position_vertical 0
     field SFFloat wheel_position_left 0
@@ -202,6 +201,6 @@
   physics Physics {
   }
   controller IS controller
-  controllerArgs IS controller_arguments
+  
 }
   }

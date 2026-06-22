@@ -42,7 +42,18 @@ def add_chariot(msg):
     # See tray example provided in env folder
     print(f"Supervisor adding new robot to payload")
     botID = extract_botID(msg)
-    bot = rootChildrenField.importMFNodeFromString(-1, f"DEF chariot_{botID} chariot {}")
+    
+    properties = ["translation -0.2 0.2 0.3 \n", "rotation 0 0 0 0 \n"]
+    
+    propertiesString = "{\n"
+    
+    for property in properties:
+        propertiesString += property
+        
+    propertiesString += "\n}"
+    
+    print(propertiesString)
+    bot = rootChildrenField.importMFNodeFromString(-1, f"DEF chariot_{botID} chariot {propertiesString}")
     
     
 # create the Robot instance.
