@@ -125,9 +125,7 @@
                 position IS wheel_position_left
               }
               device [
-                RotationalMotor {
-                  name "rm_left"
-                }
+               
               ]
               endPoint Slot {
                 endPoint VehicleWheel {
@@ -155,9 +153,7 @@
                 position IS wheel_position_right
               }
               device [
-                RotationalMotor {
-                  name "rm_right"
-                }
+             
               ]
               endPoint Slot {
                 endPoint VehicleWheel {
@@ -197,6 +193,6 @@
   physics Physics {
   }
   controller IS controller
-  
+  supervisor TRUE
 }
   }

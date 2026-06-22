@@ -47,7 +47,7 @@ def extract_properties(msg):
     
     for key in decodedPayload.keys():
         field = decodedPayload[key]
-        print(f"{key} : {field}")
+        #print(f"{key} : {field}")
         
         match key:
             case "position":
@@ -73,6 +73,7 @@ def add_chariot(msg):
     
     properties = extract_properties(msg)
     properties.append(f'controller "{controllerPath}" \n')
+    properties.append(f'name "{botID}"')
     
     propertiesString = "{\n"
     
