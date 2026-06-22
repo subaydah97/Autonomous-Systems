@@ -4,6 +4,7 @@
 #  from controller import Robot, Motor, DistanceSensor
 from controller import Supervisor
 import paho.mqtt.client as mqtt
+import json
 
 # All the robots ids in the simmulation
 robots = []
@@ -34,6 +35,26 @@ def extract_botID(msg):
     # print(f"botID:({botID})")
     # print(f"delim{delim})
     return botID
+def extract_properties(msg):
+    #Extract properties from JSON, append with \n
+    properties = []
+    #properties = ["translation -0.2 0.2 0 \n", "rotation 0 0 1 2 \n"]
+    
+    # JSON parsing here
+    decodedPayload = json.loads(msg.payload)
+    #print(json.dumps(decodedPayload))
+    
+    for key in decodedPayload.keys():
+        field = decodedPayload[key]
+        print(f"{key} : {field}")
+        
+        match key:
+            case "position":
+                #print("updating pos")
+                properties.append(f"translation {field['x']} {field['y']} 0 \n")
+            case "rotation":
+                properties.append(f"rotation 0 0 1 {field['radians_from_north']}")
+    return properties
     
 # Handles adding new robots to the simulation
 def add_chariot(msg):
@@ -43,7 +64,7 @@ def add_chariot(msg):
     print(f"Supervisor adding new robot to payload")
     botID = extract_botID(msg)
     
-    properties = ["translation -0.2 0.2 0.3 \n", "rotation 0 0 0 0 \n"]
+    properties = extract_properties(msg)
     
     propertiesString = "{\n"
     
