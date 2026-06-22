@@ -8,6 +8,7 @@ import json
 
 # All the robots ids in the simmulation
 robots = []
+controllerPath = "telemetryListener"
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -20,7 +21,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 def on_message(client, userdata, msg):
     #print(msg.topic+" "+str(msg.payload))
     botID = extract_botID(msg)
-    if int(botID) > 0:
+    if (int(botID) > 0) & robots.count(botID) < 1:
         add_chariot(msg)
     
 # Extracts the botID as integer
@@ -71,6 +72,7 @@ def add_chariot(msg):
     botID = extract_botID(msg)
     
     properties = extract_properties(msg)
+    properties.append(f'controller "{controllerPath}" \n')
     
     propertiesString = "{\n"
     
@@ -82,6 +84,7 @@ def add_chariot(msg):
     print(propertiesString)
     bot = rootChildrenField.importMFNodeFromString(-1, f"DEF chariot_{botID} chariot {propertiesString}")
     
+    robots.append(botID)
     
 # create the Robot instance.
 supervisor = Supervisor()
