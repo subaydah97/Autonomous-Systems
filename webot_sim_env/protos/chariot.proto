@@ -67,14 +67,10 @@
                 position IS turret_position_vertical
               }
               device [
-                RotationalMotor {
-                  name "turret horizontal rotation motor"
-                }
+             
               ]
               device2 [
-                RotationalMotor {
-                  name "turret vertical rotation motor"
-                }
+              
               ]
               endPoint DistanceSensor {
                 rotation 0 0 1 3.14159

@@ -51,9 +51,15 @@ def extract_properties(msg):
         match key:
             case "position":
                 #print("updating pos")
-                properties.append(f"translation {field['x']} {field['y']} 0 \n")
+                properties.append(f"translation {field['x']} {field['y']} 0.1 \n")
             case "rotation":
-                properties.append(f"rotation 0 0 1 {field['radians_from_north']}")
+                properties.append(f"rotation 0 0 1 {field['radians_from_north']} \n")
+            case "wheels":
+                properties.append(f"wheel_position_left {field['radian_position_wheel_left']} \n")
+                properties.append(f"wheel_position_right {field['radian_position_wheel_right']} \n")
+            case "laser_turret":
+                properties.append(f"turret_position_horizontal {field['radian_position_horizontal']} \n")
+                properties.append(f"turret_position_vertical {field['radian_position_vertical']} \n")
     return properties
     
 # Handles adding new robots to the simulation

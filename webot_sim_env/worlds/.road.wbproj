@@ -5,6 +5,6 @@ sceneTreePerspectives: 000000ff00000001000000030000001e000000c0000000fa010000000
 maximizedDockId: -1
 centralWidgetVisible: 1
 orthographicViewHeight: 1
-textFiles: 0 "protos/chariot.proto" "controllers/superVisor/superVisor.py" "controllers/telemetryListener/telemetryListener.py" "controllers/telemetryTest/telemetryTest.py"
+textFiles: 1 "protos/chariot.proto" "controllers/superVisor/superVisor.py" "controllers/telemetryListener/telemetryListener.py" "controllers/telemetryTest/telemetryTest.py"
 globalOptionalRendering: DistanceSensorRays
 consoles: Console:All:All

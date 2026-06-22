@@ -8,8 +8,8 @@ IMPORTABLE EXTERNPROTO "../protos/chariot.proto"
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.17621402565334157 -0.12365217754043481 -0.9765545331176093 4.3431111795680595
-  position 0.6763168323265055 -1.6314887011642598 0.7521805827660749
+  orientation 0.26713769533091114 -0.14833129651333643 -0.9521739747587948 4.114277093840799
+  position 1.1277549484280969 -1.7442728438060038 1.4326182800919223
 }
 TexturedBackground {
 }
@@ -20,7 +20,7 @@ RectangleArena {
   wallHeight 0.001
 }
 chariot {
-  translation 0 0.37 0.09
+  translation -0.22 0.37 0.09
   name "2"
 }
 Robot {
@@ -47,7 +47,7 @@ Robot {
   supervisor TRUE
 }
 chariot {
-  translation 0 0 0.09
+  translation 0 -0.28 0.09
   name "3"
   turret_position_horizontal 10
   turret_position_vertical 1
