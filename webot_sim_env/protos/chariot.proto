@@ -6,8 +6,7 @@
  
     field SFString name "defaultName"
     field SFString controller "./topath"
-    field SFString controller_arguments ""
-   
+    
     field SFFloat turret_position_horizontal 0
     field SFFloat turret_position_vertical 0
     field SFFloat wheel_position_left 0
@@ -68,14 +67,10 @@
                 position IS turret_position_vertical
               }
               device [
-                RotationalMotor {
-                  name "turret horizontal rotation motor"
-                }
+             
               ]
               device2 [
-                RotationalMotor {
-                  name "turret vertical rotation motor"
-                }
+              
               ]
               endPoint DistanceSensor {
                 rotation 0 0 1 3.14159
@@ -130,9 +125,7 @@
                 position IS wheel_position_left
               }
               device [
-                RotationalMotor {
-                  name "rm_left"
-                }
+               
               ]
               endPoint Slot {
                 endPoint VehicleWheel {
@@ -160,9 +153,7 @@
                 position IS wheel_position_right
               }
               device [
-                RotationalMotor {
-                  name "rm_right"
-                }
+             
               ]
               endPoint Slot {
                 endPoint VehicleWheel {
@@ -202,6 +193,6 @@
   physics Physics {
   }
   controller IS controller
-  controllerArgs IS controller_arguments
+  supervisor TRUE
 }
   }
