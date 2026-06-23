@@ -12,8 +12,8 @@ import json
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
-    print(f"Connected with result code {reason_code}")
-    print(f"my id:'{myID}'")
+    print(f"chariot_{myID}: Connected with result code {reason_code}")
+    #print(f"my id:'{myID}'")
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe(f"bot/{myID}")
