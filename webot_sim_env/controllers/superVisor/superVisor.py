@@ -4,9 +4,11 @@
 #  from controller import Robot, Motor, DistanceSensor
 from controller import Supervisor
 import paho.mqtt.client as mqtt
+import json
 
 # All the robots ids in the simmulation
 robots = []
+controllerPath = "telemetryListener"
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -19,7 +21,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 def on_message(client, userdata, msg):
     #print(msg.topic+" "+str(msg.payload))
     botID = extract_botID(msg)
-    if int(botID) > 0:
+    if (int(botID) > 0) & robots.count(botID) < 1:
         add_chariot(msg)
     
 # Extracts the botID as integer
@@ -34,6 +36,32 @@ def extract_botID(msg):
     # print(f"botID:({botID})")
     # print(f"delim{delim})
     return botID
+def extract_properties(msg):
+    #Extract properties from JSON, append with \n
+    properties = []
+    #properties = ["translation -0.2 0.2 0 \n", "rotation 0 0 1 2 \n"]
+    
+    # JSON parsing here
+    decodedPayload = json.loads(msg.payload)
+    #print(json.dumps(decodedPayload))
+    
+    for key in decodedPayload.keys():
+        field = decodedPayload[key]
+        #print(f"{key} : {field}")
+        
+        match key:
+            case "position":
+                #print("updating pos")
+                properties.append(f"translation {field['x']} {field['y']} 0.1 \n")
+            case "rotation":
+                properties.append(f"rotation 0 0 1 {field['radians_from_north']} \n")
+            case "wheels":
+                properties.append(f"wheel_position_left {field['radian_position_wheel_left']} \n")
+                properties.append(f"wheel_position_right {field['radian_position_wheel_right']} \n")
+            case "laser_turret":
+                properties.append(f"turret_position_horizontal {field['radian_position_horizontal']} \n")
+                properties.append(f"turret_position_vertical {field['radian_position_vertical']} \n")
+    return properties
     
 # Handles adding new robots to the simulation
 def add_chariot(msg):
@@ -42,8 +70,22 @@ def add_chariot(msg):
     # See tray example provided in env folder
     print(f"Supervisor adding new robot to payload")
     botID = extract_botID(msg)
-    bot = rootChildrenField.importMFNodeFromString(-1, f"DEF chariot_{botID} chariot {}")
     
+    properties = extract_properties(msg)
+    properties.append(f'controller "{controllerPath}" \n')
+    properties.append(f'name "{botID}"')
+    
+    propertiesString = "{\n"
+    
+    for property in properties:
+        propertiesString += property
+        
+    propertiesString += "\n}"
+    
+    print(propertiesString)
+    bot = rootChildrenField.importMFNodeFromString(-1, f"DEF chariot_{botID} chariot {propertiesString}")
+    
+    robots.append(botID)
     
 # create the Robot instance.
 supervisor = Supervisor()
