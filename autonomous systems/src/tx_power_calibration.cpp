@@ -19,9 +19,9 @@ int rssi_count[3] = {0, 0, 0};
 bool calibration_done = false;
 
 static int beacon_index(const char *name) { // returns the index of the beacon based on its name, or -1 if the name doesn't match any known beacons
-    if (strcmp(name, "ForestBeaconZero") == 0)   return 0;
-    if (strcmp(name, "ForestBeaconOne") == 0)   return 1;
-    if (strcmp(name, "ForestBeaconTwo") == 0) return 2;
+    if (strcmp(name, "ForestBeaconOne") == 0)   return 0;
+    if (strcmp(name, "ForestBeaconTwo") == 0)   return 1;
+    if (strcmp(name, "ForestBeaconThree") == 0) return 2;
     return -1;
 }
 

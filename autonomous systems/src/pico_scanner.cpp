@@ -11,7 +11,7 @@ const float BY[3] = {0.0f, 0.0f, 100.0f};
 
 // calibrated 1-unit baseline transmission powers
 // these values allow the log-distance path loss equation to calculate the correct distance 
-const float TX_POWER[3] = {-15.24f, -18.74f, -13.47f};//use calibration code from tx_power_calibration.cpp to find these values 
+const float TX_POWER[3] = {-19.78f, -12.44f, -12.93f};//use calibration code from tx_power_calibration.cpp to find these values 
 const float ALPHA = 0.08f;                        // smoothing factor for the exponential moving average filter applied to RSSI values, decrease if the position jumps too much, increase if it lags behind
 const float n = 2.5f;                             // path loss exponent for distance calculation
 float rssi_avg[3] = {-100.0f, -100.0f, -100.0f}; // array to store the smoothed RSSI values for each beacon
@@ -143,11 +143,11 @@ struct Kalman2D
 
 static int beacon_index(const char *name)
 {
-    if (strcmp(name, "ForestBeaconZero") == 0)
-        return 0;
     if (strcmp(name, "ForestBeaconOne") == 0)
-        return 1;
+        return 0;
     if (strcmp(name, "ForestBeaconTwo") == 0)
+        return 1;
+    if (strcmp(name, "ForestBeaconThree") == 0)
         return 2;
     return -1;
 }
