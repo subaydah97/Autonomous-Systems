@@ -27,7 +27,7 @@ Payload will be stored as bytes.
 Publish to "OR/REM"
 The payload should be an integer represented as a utf-8 string. 
 
-# Auxiliary ommands
+# Auxiliary Commands
 Publish to "OR/COMMANDS"
 
 ## CLEAR
