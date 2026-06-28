@@ -4,11 +4,21 @@ import pickle
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
-# Obstacles fields
-# id: assigned at creation. Used to count total obstacles
+# Global variables
+obstacles = []
+    ## Obstacles fields
+    ## 'id': assigned at creation. Used to count total obstacles
+    ## 'payload': bytes
+# The amount of obstacles that have been added to the registry. Resets when the registry is cleared.
+obstacleCount = 0
+# Used to control program termination
+persistFlag = 1
+
+HOSTNAME = "localhost"
 
 # Functions
-
+def publishRegistry(obstacles):
+    publish.single("OR/COMPLETE_REGISTRY", json.dumps(obstacles), hostname=HOSTNAME)
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f"obstacle_registry: Connected with result code {reason_code}")
@@ -30,6 +40,7 @@ def on_message(client, userdata, msg):
                     case "CLEAR":
                         print("CLEAR command received, clearing obstacle registry")
                         obstacles.clear()
+                        obstacleCount = 0
                     case "TERM":
                         print("TERM command received, lowering persist flag")
                         persistFlag = 0
@@ -37,7 +48,7 @@ def on_message(client, userdata, msg):
                         print(f"obstacleCount:{obstacleCount}")
                         for obstacle in obstacles:
                             print(obstacle)
-                        publish.single("OR/COMPLETE_REGISTRY", json.dumps(obstacles), hostname=HOSTNAME)
+                        publishRegistry(obstacles)
             case "OR/NEW":
                 id = obstacleCount
                 obstacleCount += 1
@@ -49,20 +60,12 @@ def on_message(client, userdata, msg):
                 try:
                     targID = int(decoded_payload)
                     for obstacle in obstacles:
-                        if obstacle[0] == targID: print(f'removing obstacle:"{obstacle}"'); obstacles.remove(obstacle)
-                except:
-                        print("Obstacle removal error:"+'"'+decoded_payload+'"')
+                        if obstacle["id"] == targID: print(f'removing obstacle:"{obstacle}"'); obstacles.remove(obstacle)
+                except Exception as e:
+                        print("Obstacle removal error:"+'"'+decoded_payload+'"',e)
 
-# Global variables
-obstacles = []
-obstacleCount = 0
-
-persistFlag = 1
-
-HOSTNAME = "localhost"
 
 # Main
-
 print("attempting to open to obstacle file")
 try:
     with open("./mqtt/obstacles.pickle", "rb") as saveFile:
@@ -91,15 +94,16 @@ while persistFlag > 0:
 # Cleanup
 print(f"exiting with code:{persistFlag}")
 
-print("disconnecting from mqtt server")
-mqttc.loop_stop()
-
 print("attempting to save obstacles to file")
 try:
     with open("./mqtt/obstacles.pickle", "wb") as saveFile:
         pickle.dump(obstacles,saveFile)
 except Exception as e:
     print("attempt failed:",e)
+    print("Performing death-cry.")
+    publishRegistry(obstacles)
 else: 
     print("attempt success.")
 
+print("disconnecting from mqtt server")
+mqttc.loop_stop()

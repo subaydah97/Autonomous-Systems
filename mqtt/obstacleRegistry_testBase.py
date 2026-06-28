@@ -1,6 +1,7 @@
 import paho.mqtt.publish as publish
 
 HOSTNAME = "localhost"
+publish.single("OR/COMMANDS", f"CLEAR", hostname=HOSTNAME)
 for obstacleData in range(10):
     publish.single("OR/NEW", f"DUMMY_DATA:{obstacleData}", hostname=HOSTNAME)
 for obstacleID in [1,3,7]:
