@@ -10,6 +10,9 @@ The program is explicitly not concerned with the following.:
 - Processing obstacles
 - Ensuring each robot has a full copy of the registry.
 
+The program is redundant. The system could operate with or without it. It keeps track of obstacles, and can be prodded to spit out it's whole list. Because in MQTT anyone can hear everything they want to, bots can listen to the topics "OR/NEW" and "OR/REM" themselves.
+The program does allow for new bots to catch up on all the old obstacles, but technically any other robot can do that too.
+
 ## Input, Persistent registry
 When gracefully terminated, the program will attempt to store the registry as a pickle file. If such a file is present at the start of runtime, it will attempt to load it.
 
