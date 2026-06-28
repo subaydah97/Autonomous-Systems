@@ -60,6 +60,16 @@ persistFlag = 1
 HOSTNAME = "localhost"
 
 # Main
+
+print("attempting to open to obstacle")
+try:
+    with open("./mqtt/obstacles.pickle", "rb") as saveFile:
+        obstacles = pickle.load(saveFile)
+except Exception as e:
+    print("attempt failed:",e)
+else: 
+    print("attempt success.")
+
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
 mqttc.on_message = on_message
