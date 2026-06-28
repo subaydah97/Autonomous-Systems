@@ -8,9 +8,6 @@ import paho.mqtt.publish as publish
 # id: assigned at creation. Used to count total obstacles
 
 # Functions
-def getObstacleCount():
-    #Get the ID of the latest obstacle in the file.
-    return 0
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -20,6 +17,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
+    global obstacleCount, obstacles, persistFlag
     try:
         decoded_payload = msg.payload.decode("utf-8")
         #print(msg.topic+':"'+ decoded_payload +'"')
@@ -29,18 +27,22 @@ def on_message(client, userdata, msg):
     match msg.topic:
             case "OR/COMMANDS":
                 match decoded_payload.upper():
+                    case "CLEAR":
+                        print("CLEAR command received, clearing obstacle registry")
+                        obstacles.clear()
                     case "TERM":
                         print("TERM command received, lowering persist flag")
-                        global persistFlag; persistFlag = 0
+                        persistFlag = 0
                     case "SPIT":
-                        print(obstacles)
+                        print(f"obstacleCount:{obstacleCount}")
+                        for obstacle in obstacles:
+                            print(obstacle)
                         publish.single("OR/COMPLETE_REGISTRY", json.dumps(obstacles), hostname=HOSTNAME)
             case "OR/NEW":
-                global obstacleCount
                 id = obstacleCount
                 obstacleCount += 1
                 
-                obstacles.append((id,str(msg.payload)))
+                obstacles.append({"id":id,"payload":str(msg.payload)})
                 print(f'added obstacle:"{obstacles[-1]}"')
 
             case "OR/REM":
@@ -53,7 +55,7 @@ def on_message(client, userdata, msg):
 
 # Global variables
 obstacles = []
-obstacleCount = getObstacleCount()
+obstacleCount = 0
 
 persistFlag = 1
 
@@ -61,7 +63,7 @@ HOSTNAME = "localhost"
 
 # Main
 
-print("attempting to open to obstacle")
+print("attempting to open to obstacle file")
 try:
     with open("./mqtt/obstacles.pickle", "rb") as saveFile:
         obstacles = pickle.load(saveFile)
@@ -69,6 +71,11 @@ except Exception as e:
     print("attempt failed:",e)
 else: 
     print("attempt success.")
+
+try:
+    obstacleCount = int(obstacles[-1]["id"]) + 1
+except Exception as e:
+    print("Recovering obstacle count failed:",e)
 
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
