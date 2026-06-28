@@ -6,8 +6,11 @@ The program is concerned with:
 The program is explicitly not concerned with the following.:
 - Processing obstacles
 - Ensuring each robot has a full copy of the registry.
-## Persistent registry
+
+## Input, Persistent registry
 When gracefully terminated, the program will attempt to store the registry as a pickle file. If such a file is present at the start of runtime, it will attempt to load it.
+## Output, JSON
+
 # Adding obstacles
 Publish to "OR/NEW"
 Payload will be stored as bytes.
@@ -44,4 +47,7 @@ Expected results is that the obstacles list contains obstacle IDs 0 through 10, 
 
 ## testSpit
 Test for receiving COMPLETE_REGISTRY using json. 
-Incomplete
+1. Connects to the topic "OR/COMPLETE_REGISTRY"
+2. Instructs the OR to SPIT.
+3. Attempts to swallow the spit data.
+4. Expect id_type: int, payload_type:string
