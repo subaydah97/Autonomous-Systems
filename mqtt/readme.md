@@ -1,3 +1,6 @@
+# Dependencies
+- Python version as of 06/2026
+- paho-mqtt 2.1.0
 # Brief
 This readme outlines the obstacle registry program.
 The program is concerned with:
