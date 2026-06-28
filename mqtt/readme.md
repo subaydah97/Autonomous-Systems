@@ -9,7 +9,9 @@ The program is explicitly not concerned with the following.:
 
 ## Input, Persistent registry
 When gracefully terminated, the program will attempt to store the registry as a pickle file. If such a file is present at the start of runtime, it will attempt to load it.
+
 ## Output, JSON
+The program can be prompted to output the full registry to topic "OR/COMPLETE_REGISTRY" as an array of JSON objects, encoded in utf-8.
 
 # Adding obstacles
 Publish to "OR/NEW"
