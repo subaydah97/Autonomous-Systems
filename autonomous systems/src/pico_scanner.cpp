@@ -6,16 +6,16 @@
 #define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length of the beacon prefix string, excluding the null terminator
 
 // beacon `coordinates` in the environment, used for later localization calculations
-const float BX[3] = {0.0f, 100.0f, 50.0f};   
-const float BY[3] = {0.0f, 0.0f, 100.0f}; 
+const float BX[3] = {0.0f, 100.0f, 50.0f};
+const float BY[3] = {0.0f, 0.0f, 100.0f};
 
 // calibrated 1-unit baseline transmission powers
-// these values allow the log-distance path loss equation to calculate the correct distance 
-const float TX_POWER[3] = {-19.78f, -12.44f, -12.93f};//use calibration code from tx_power_calibration.cpp to find these values 
-const float ALPHA = 0.08f;                        // smoothing factor for the exponential moving average filter applied to RSSI values, decrease if the position jumps too much, increase if it lags behind
-const float n = 2.5f;                             // path loss exponent for distance calculation
-float rssi_avg[3] = {-100.0f, -100.0f, -100.0f}; // array to store the smoothed RSSI values for each beacon
-bool seen[3] = {false, false, false};            // array to track whether each beacon has been seen at least once
+// these values allow the log-distance path loss equation to calculate the correct distance
+const float TX_POWER[3] = {-22.34f, -14.98f, -8.01f}; // use calibration code from tx_power_calibration.cpp to find these values
+const float ALPHA = 0.08f;                            // smoothing factor for the exponential moving average filter applied to RSSI values, decrease if the position jumps too much, increase if it lags behind
+const float n = 2.5f;                                 // path loss exponent for distance calculation
+float rssi_avg[3] = {-100.0f, -100.0f, -100.0f};      // array to store the smoothed RSSI values for each beacon
+bool seen[3] = {false, false, false};                 // array to track whether each beacon has been seen at least once
 
 struct Kalman2D
 {
@@ -36,13 +36,13 @@ struct Kalman2D
         vx = 0;
         vy = 0;
 
-        for (int i = 0; i < 4; i++) 
+        for (int i = 0; i < 4; i++)
             for (int j = 0; j < 4; j++)
                 P[i][j] = (i == j) ? 500.0f : 0.0f;
 
         Q_pos = 0.1f; // decrease if position jumps too much, decrease if it lags
-        Q_vel = 0.1f;
-        R = 80.0f; 
+        Q_vel = 0.1f; // decrease if velocity jumps too much, decrease if it lags
+        R = 80.0f;    // measurement noise, decrease if position jumps too much, increase if it lags
 
         initialised = true;
         last_ms = millis();
@@ -56,10 +56,10 @@ struct Kalman2D
             return;
         }
 
-        float dt = (millis() - last_ms) / 1000.0f; 
+        float dt = (millis() - last_ms) / 1000.0f;
         last_ms = millis();
         if (dt <= 0 || dt > 2.0f)
-            dt = 0.1f; 
+            dt = 0.1f;
 
         // state prediction
         float px = x + vx * dt;
@@ -101,7 +101,7 @@ struct Kalman2D
 
         float det = S00 * S11 - S01 * S01;
         if (fabsf(det) < 1e-6f)
-        { 
+        {
             x = px;
             y = py;
             vx = pvx;
@@ -139,7 +139,7 @@ struct Kalman2D
             for (int j = 0; j < 4; j++)
                 P[i][j] = newP[i][j];
     }
-} kf; 
+} kf;
 
 static int beacon_index(const char *name)
 {
@@ -155,7 +155,7 @@ static int beacon_index(const char *name)
 // converts current RSSI to an estimated distance based on calibrated parameters
 static float rssi_to_distance(int idx, float rssi)
 {
-    return powf(10.0f, (TX_POWER[idx] - rssi) / (10.0f * n)); 
+    return powf(10.0f, (TX_POWER[idx] - rssi) / (10.0f * n));
 }
 
 static bool trilaterate(float *out_x, float *out_y)
@@ -187,8 +187,8 @@ static bool trilaterate(float *out_x, float *out_y)
 static bool parse_name(const uint8_t *data, uint8_t max_len, char *out, uint8_t out_size)
 {
     int i = 0;
-    while (i < max_len) // loop through the advertisement data chunks to find the one containing the device name 
-    { 
+    while (i < max_len) // loop through the advertisement data chunks to find the one containing the device name
+    {
         uint8_t chunk_len = data[i];
         if (chunk_len == 0 || i + chunk_len > max_len)
             break;
@@ -207,7 +207,7 @@ static bool parse_name(const uint8_t *data, uint8_t max_len, char *out, uint8_t 
     return false;
 }
 
-void advertisementCallback(BLEAdvertisement *adv) 
+void advertisementCallback(BLEAdvertisement *adv)
 {
     char name[32] = {0};
     if (!parse_name(adv->getAdvData(), 31, name, sizeof(name)))
@@ -220,6 +220,14 @@ void advertisementCallback(BLEAdvertisement *adv)
         return;
 
     float rssi = (float)adv->getRssi();
+
+    constexpr float MAX_RSSI_JUMP = 8.0f; // dB
+    if (seen[idx] && fabsf(rssi - rssi_avg[idx]) > MAX_RSSI_JUMP)
+    {
+        // ignore this one sample, likely a multipath spike
+        return;
+    }
+
     if (!seen[idx])
     {
         rssi_avg[idx] = rssi;
@@ -228,17 +236,20 @@ void advertisementCallback(BLEAdvertisement *adv)
     else
         rssi_avg[idx] = ALPHA * rssi + (1.0f - ALPHA) * rssi_avg[idx];
 
-    if (!seen[0] || !seen[1] || !seen[2])
-        return;
+    // debug prints to monitor the RSSI values, distance estimates, and final position estimates
+    Serial.print("r0=");
+    Serial.print(rssi_avg[0], 1);
+    Serial.print(" r1=");
+    Serial.print(rssi_avg[1], 1);
+    Serial.print(" r2=");
+    Serial.println(rssi_avg[2], 1);
 
-    // debug prints to monitor the RSSI values, distance estimates, and final position estimates    
-    Serial.print("r0=");   Serial.print(rssi_avg[0], 1);
-    Serial.print(" r1=");  Serial.print(rssi_avg[1], 1);
-    Serial.print(" r2=");  Serial.println(rssi_avg[2], 1);
-
-    Serial.print("d0=");   Serial.print(rssi_to_distance(0, rssi_avg[0]), 1);
-    Serial.print(" d1=");  Serial.print(rssi_to_distance(1, rssi_avg[1]), 1);
-    Serial.print(" d2=");  Serial.println(rssi_to_distance(2, rssi_avg[2]), 1);
+    Serial.print("d0=");
+    Serial.print(rssi_to_distance(0, rssi_avg[0]), 1);
+    Serial.print(" d1=");
+    Serial.print(rssi_to_distance(1, rssi_avg[1]), 1);
+    Serial.print(" d2=");
+    Serial.println(rssi_to_distance(2, rssi_avg[2]), 1);
 
     // perform trilateration to estimate the (x,y) position based on the distances to the three beacons
     float tx, ty;

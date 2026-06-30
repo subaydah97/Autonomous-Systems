@@ -22,7 +22,10 @@ void setup()
     pAdvertising->setAdvertisementType(BLE_GAP_CONN_MODE_NON); // set the advertising type to non-connectable (beacon mode)
 
     bool started = pAdvertising->start(0); // start advertising with no timeout (0 means advertise indefinitely until stop is called)
-
+   
+    pAdvertising->setMinInterval(80); // set the minimum advertising interval to 80 units (50ms) for faster advertising
+    pAdvertising->setMaxInterval(160); // set the maximum advertising interval to 160 units (100ms) for faster advertising
+    
     if (started)
     {
         // 3 fast blinks = broadcasting
