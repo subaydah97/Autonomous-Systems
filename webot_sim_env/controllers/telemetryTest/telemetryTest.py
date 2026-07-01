@@ -45,7 +45,7 @@ mqttc.connect("localhost")
 mqttc.loop_start()
 
 # Our application produce some messages
-msg_info = mqttc.publish("bot/1", testfile.read(), qos=1)
+msg_info = mqttc.publish("bot/989", testfile.read(), qos=1)
 unacked_publish.add(msg_info.mid)
 
 # Wait for all message to be published

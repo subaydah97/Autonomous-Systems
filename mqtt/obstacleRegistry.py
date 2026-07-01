@@ -53,7 +53,7 @@ def on_message(client, userdata, msg):
                 id = obstacleCount
                 obstacleCount += 1
                 
-                obstacles.append({"id":id,"payload":str(msg.payload)})
+                obstacles.append({"id":id,"payload":str(msg.payload.decode("utf-8"))})
                 print(f'added obstacle:"{obstacles[-1]}"')
 
             case "OR/REM":

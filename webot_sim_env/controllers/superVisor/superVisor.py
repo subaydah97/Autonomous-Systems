@@ -6,13 +6,16 @@ from controller import Supervisor
 import paho.mqtt.client as mqtt
 import json
 
-# All the robots ids in the simmulation
+# global variables
+
+PRFX = "DIGITAL_TWIN_CREATOR:"
+
 robots = []
 controllerPath = "telemetryListener"
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
-    print(f"Connected with result code {reason_code}")
+    print(PRFX,f"Connected with result code {reason_code}")
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe("bot/#")
@@ -21,6 +24,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 def on_message(client, userdata, msg):
     #print(msg.topic+" "+str(msg.payload))
     botID = extract_botID(msg)
+    
     if (int(botID) > 0) & robots.count(botID) < 1:
         add_chariot(msg)
     
@@ -68,7 +72,7 @@ def add_chariot(msg):
     # https://cyberbotics.com/doc/reference/supervisor?tab-language=python#wb_supervisor_field_set_sf_float
     # https://cyberbotics.com/doc/reference/supervisor?tab-language=python#wb_supervisor_field_import_mf_node_from_string
     # See tray example provided in env folder
-    print(f"Supervisor adding new robot to payload")
+    print(PRFX,f"Supervisor adding new robot to payload")
     botID = extract_botID(msg)
     
     properties = extract_properties(msg)

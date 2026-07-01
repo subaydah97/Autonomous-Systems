@@ -38,11 +38,15 @@ Robot {
   controller "<none>"
 }
 Robot {
-  name "Supervisor"
+  name "SupervisorCreateDigitalTwins"
   controller "superVisor"
   supervisor TRUE
 }
 Robot {
   name "mqttTelemtryReceptionTestBot"
   controller "telemetryTest"
+}
+Robot {
+  name "SupervisorCreateObstacles"
+  supervisor TRUE
 }
