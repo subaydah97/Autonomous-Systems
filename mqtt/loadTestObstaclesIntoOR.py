@@ -16,7 +16,8 @@ publish.single("OR/COMMANDS", f"CLEAR", hostname=HOSTNAME)
 
 # Load telemetry from file: For testData in parsedJson: 
 for obstacle in obstacles:
-    print(f"Loading payload:{type(obstacle)}={obstacle}")
-    publish.single("OR/NEW", json.dumps(obstacle["payload"]), hostname=HOSTNAME)
+    payload = obstacle["payload"]
+    print(f"Loading payload:{type(payload)}={payload}")
+    publish.single("OR/NEW", json.dumps(payload), hostname=HOSTNAME)
 
 if not sys.argv[1:].count("-s"):print("Initiating spit");publish.single("OR/COMMANDS", f"SPIT", hostname=HOSTNAME)

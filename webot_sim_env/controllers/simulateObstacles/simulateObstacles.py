@@ -31,6 +31,11 @@ def on_message(client, userdata, msg):
     #print(PRFX,msg.topic+" "+str(msg.payload))
 
     match msg.topic:
+        case "OR/COMMANDS":
+                match msg.payload.decode("utf-8").upper():
+                    case "CLEAR":
+                          remove_all_obstacles()
+                          
         case "OR/COMPLETE_REGISTRY":
             
             remove_all_obstacles()
@@ -43,21 +48,23 @@ def on_message(client, userdata, msg):
                 
         case "OR/NEW":
             obstacle = json.loads(msg.payload)
-            create_obstacle(obstacle)
+            formattedObstacle = {"id":get_new_id(),"payload":obstacle}
+            create_obstacle(formattedObstacle)
         case "OR/REM":
             remove_obstacle(int(msg.payload))
         case _:
             print(PRFX,"Topic not accounted for:",msg.topic+" "+str(msg.payload))
+def get_new_id(obstacleCache=obstacleCache):
+    newID = -1
+    # If the obstacle has no id yet, create it. This should allign with the id an obstacle registry would assign to this obstacle.
+    try:
+        newID = obstacleCache[-1]["id"]+1
+    except:
+        newID = 0
+    return newID
 
 def create_obstacle(obstacle):
-
-    # If the obstacle has no id yet, create it. This should allign with the id an obstacle registry would assign to this obstacle.
-    if "id" not in obstacle.keys(): 
-        try:
-            obstacle["id"] = obstacleCache[-1]["id"]+1
-        except:
-            obstacle["id"] = 0
-
+    
     # Create base object
     obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Pose { translation 0 0 0 children [ Shape {geometry Sphere {radius 0.1}} ] }" 
     selfChildren.importMFNodeFromString(-1, obstacleString)
@@ -67,12 +74,8 @@ def create_obstacle(obstacle):
     
     obstacleCache.append({"id":obstacle["id"],"node":node})
 
-    # Find where the payload begins. Obstacles gained through OR/COMPLETE_REGISTRY have their payload as a field, obstacles gained through OR/NEW are an immediate payload.
-    payload = obstacle
-    if "payload" in obstacle: payload = obstacle["payload"] 
-
-    for key in payload.keys():
-        field = payload[key]
+    for key in obstacle["payload"].keys():
+        field = obstacle["payload"][key]
         match key:
             case "position":
                 node.getField("translation").setSFVec3f([field["x"],field["y"],field["z"]])
@@ -90,16 +93,21 @@ def remove_obstacle(obstacleID):
                         if obstacle["id"] == obstacleID: 
                             print(PRFX,f'removing obstacle:"{obstacle}"')
                             obstacle["node"].remove()
-                            obstacleCache.remove(obstacle)
+                   
 
                 except Exception as e:
                         print("Obstacle removal error:"+'"'+msg.payload.decode("utf-8")+'"',e)
 
-def remove_all_obstacles(obstacleCarch=obstacleCache):
-     if len(obstacleCache) < 1: return
+def remove_all_obstacles():
+    global obstacleCache
+    if len(obstacleCache) < 1: return
 
-     for obstacle in obstacleCache.reverse():
-        remove_obstacle(obstacle["id"])
+    try:
+        for obstacle in obstacleCache:
+            remove_obstacle(obstacle["id"])
+        obstacleCache.clear()
+    except Exception as e:
+         print(PRFX,e)
 
 # create the Robot instance.
 robot = Supervisor()
