@@ -7,11 +7,11 @@
     "radians_from_north": 0.5
   },
   "wheels": {
-    "radian_position_wheel_left": 1,
-    "radian_position_wheel_right": 2
+    "radian_position_wheel_left": 1.0,
+    "radian_position_wheel_right": 2.0
   },
   "laser_turret": {
-    "radian_position_horizontal": 1,
-    "radian_position_vertical": 2
+    "radian_position_horizontal": 1.0,
+    "radian_position_vertical": 2.0
   }
 }

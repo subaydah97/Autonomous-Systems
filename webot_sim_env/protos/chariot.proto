@@ -190,8 +190,7 @@
   boundingObject Box {
     size 0.3 0.1 0.03
   }
-  physics Physics {
-  }
+
   controller IS controller
   supervisor TRUE
 }
