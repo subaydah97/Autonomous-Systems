@@ -8,7 +8,7 @@ import paho.mqtt.publish as publish
 obstacles = []
     ## Obstacles fields
     ## 'id': assigned at creation. Used to count total obstacles
-    ## 'payload': bytes
+    ## 'payload': object or byte-string
 # The amount of obstacles that have been added to the registry. Resets when the registry is cleared.
 obstacleCount = 0
 # Used to control program termination
@@ -52,8 +52,12 @@ def on_message(client, userdata, msg):
             case "OR/NEW":
                 id = obstacleCount
                 obstacleCount += 1
+                try:
+                    obstacles.append({"id":id,"payload":json.loads(msg.payload)})
+                except Exception as e:
+                    print("failed to load obstacle as JSON, storing as bytes instead:",msg.payload)
+                    obstacles.append({"id":id,"payload":str(msg.payload.decode("utf-8"))})
                 
-                obstacles.append({"id":id,"payload":str(msg.payload.decode("utf-8"))})
                 print(f'added obstacle:"{obstacles[-1]}"')
 
             case "OR/REM":

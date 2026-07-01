@@ -1,0 +1,36 @@
+[
+  {
+    "id": 0,
+    "payload": {
+      "position": {
+        "x": 1,
+        "y": 2,
+        "z": 0.5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 1,
+        "radians": 1.2
+      },
+      "shape": "rectangle 4 2 1"
+    }
+  },
+  {
+    "id": 1,
+    "payload": {
+      "position": {
+        "x": 5,
+        "y": 6,
+        "z": 0.7
+      },
+      "rotation": {
+        "x": 0.1,
+        "y": 0.2,
+        "z": 1.3,
+        "radians": 1.4
+      },
+      "shape": "sphere 9"
+    }
+  }
+]
