@@ -54,6 +54,7 @@ def on_message(client, userdata, msg):
             remove_obstacle(int(msg.payload))
         case _:
             print(PRFX,"Topic not accounted for:",msg.topic+" "+str(msg.payload))
+
 def get_new_id(obstacleCache=obstacleCache):
     newID = -1
     # If the obstacle has no id yet, create it. This should allign with the id an obstacle registry would assign to this obstacle.
@@ -66,7 +67,7 @@ def get_new_id(obstacleCache=obstacleCache):
 def create_obstacle(obstacle):
     
     # Create base object
-    obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Pose { translation 0 0 0 children [ Shape {geometry Sphere {radius 0.1}} ] }" 
+    obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Pose { translation 0 0 0 children [ Shape {geometry Sphere {radius 0.1} appearance PBRAppearance {baseColor 1 0 0 metalness 0} } ] }" 
     selfChildren.importMFNodeFromString(-1, obstacleString)
 
     # Alter base object according to keys in the obstacle data
