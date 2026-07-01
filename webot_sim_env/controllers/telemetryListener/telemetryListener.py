@@ -33,12 +33,12 @@ def on_message(client, userdata, msg):
         match key:
             case "position":
                 z = positionField.getSFVec3f()[2]
-                positionField.setSFVec3f([field['x'],field['y'] ,z])
+                positionField.setSFVec3f([float(field['x']),float(field['y']) ,z])
             case "rotation":
                 rotationField.setSFRotation([0,0,1,field['radians_from_north']])
             case "wheels":
-                wheelLeftField.setSFFloat(field['radian_position_wheel_left'])
-                wheelRightField.setSFFloat(field['radian_position_wheel_right'])
+                wheelLeftField.setSFFloat(float(field['radian_position_wheel_left']))
+                wheelRightField.setSFFloat(float(field['radian_position_wheel_right']))
             case "laser_turret":
                 1 == 1
 

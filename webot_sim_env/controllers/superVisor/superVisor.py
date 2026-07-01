@@ -56,12 +56,12 @@ def extract_properties(msg):
         match key:
             case "position":
                 #print("updating pos")
-                properties.append(f"translation {field['x']} {field['y']} 0.1 \n")
+                properties.append(f"translation {float(field['x'])} {float(field['y'])} 0.1 \n")
             case "rotation":
                 properties.append(f"rotation 0 0 1 {field['radians_from_north']} \n")
             case "wheels":
-                properties.append(f"wheel_position_left {field['radian_position_wheel_left']} \n")
-                properties.append(f"wheel_position_right {field['radian_position_wheel_right']} \n")
+                properties.append(f"wheel_position_left {float(field['radian_position_wheel_left'])} \n")
+                properties.append(f"wheel_position_right {float(field['radian_position_wheel_right'])} \n")
             case "laser_turret":
                 properties.append(f"turret_position_horizontal {field['radian_position_horizontal']} \n")
                 properties.append(f"turret_position_vertical {field['radian_position_vertical']} \n")
