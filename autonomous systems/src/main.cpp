@@ -10,6 +10,7 @@
  
 #define BEACON_PREFIX "ForestBeacon"                  // prefix used to filter beacon names in the scanner
 #define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length excluding the null terminator
+#define _telemetry_target "bot/1"
 
 const char* ssid = "mn-92937";
 const char* password = "12345679";
@@ -367,6 +368,7 @@ constexpr float MAX_DRIVE_SPEED = 0.65f;
 constexpr uint32_t ENCODER_CONTROL_INTERVAL_MS = 500;
 constexpr uint32_t ENCODER_TIMEOUT_MS = 2500;
 constexpr uint32_t MIN_ENCODER_INTERVAL_US = 3000;
+constexpr float WHEEL_TICK_TO_RAD = (2.0f * PI) / 10.0f;
  
  
  
@@ -575,6 +577,15 @@ void startReverse()
     robotState = GOING_HOME;   // IMPORTANT FIX (you forgot this control link)
 
     setMotionMode(MotionMode::BACKWARD);
+}
+
+void getWheelRadians(float &leftRad, float &rightRad)
+{
+    uint32_t l, r;
+    readEncoderTicks(l, r);
+
+    leftRad = l * WHEEL_TICK_TO_RAD;
+    rightRad = r * WHEEL_TICK_TO_RAD;
 }
 // =====================================================================
 // Encoder feedback controller
@@ -925,9 +936,8 @@ void loop()
     mqttClient.loop();
     BTstack.loop();
 
-    // =====================================================
-    // 1. Wait after obstacle detection before publishing
-    // =====================================================
+    // Wait after obstacle detection before publishing
+
     if (waitingForCoordinates && !coordinatesSent)
 {
     if (millis() - waitStartTime >= 10000)
@@ -944,6 +954,29 @@ void loop()
         serializeJson(doc, buffer);
 
         mqttClient.publish("OR/NEW", buffer);
+
+      
+    // Second publish 
+        StaticJsonDocument<128> botDoc;
+
+        JsonObject pos = botDoc.createNestedObject("position");
+        pos["x"] = (float)latestX;
+        pos["y"] = (float)latestY;
+
+        JsonObject wheels = botDoc.createNestedObject("wheels");
+
+        float lRad, rRad;
+        getWheelRadians(lRad, rRad);
+
+        wheels["radian_position_wheel_left"] = lRad;
+        wheels["radian_position_wheel_right"] = rRad;
+
+        char botBuffer[128];
+        serializeJson(botDoc, botBuffer);
+
+        mqttClient.publish(_telemetry_target, botBuffer);
+
+        // =====================================================
 
         Serial.println("Obstacle coordinates sent:");
         Serial.println(buffer);
