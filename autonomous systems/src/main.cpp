@@ -4,21 +4,77 @@
 #include <Wire.h>       // I2C for the ToF sensor
 #include <VL53L1X.h>    // ToF distance sensor
 #include <Servo.h>      // motor control via PWM "servo" pulses
- 
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
  
 #define BEACON_PREFIX "ForestBeacon"                  // prefix used to filter beacon names in the scanner
 #define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length excluding the null terminator
+
+const char* ssid = "mn-92937";
+const char* password = "12345679";
+
+const char* mqttServer = "192.168.212.106";
+
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+bool waitingForCoordinates = false;
+bool coordinatesSent = false;
+unsigned long waitStartTime = 0;
+
+float latestX = 0.0f;
+float latestY = 0.0f;
  
 // beacon coordinates in the environment, used for trilateration
 const float BX[3] = {0.0f, 100.0f, 50.0f};
 const float BY[3] = {0.0f, 0.0f, 100.0f};
  
 // calibrated 1-unit baseline transmission powers (from tx_power_calibration.cpp)
-const float TX_POWER[3] = {-18.28f, -18.64f, -16.39f};
+const float TX_POWER[3] = {-15.32f, -28.98f, -18.87f};
 const float ALPHA = 0.35f; // smoothing factor for the RSSI exponential moving average
 const float n = 2.5f;      // path loss exponent for distance calculation
 float rssi_avg[3] = {-100.0f, -100.0f, -100.0f};
 bool seen[3] = {false, false, false};
+
+void connectWiFi()
+{
+    Serial.print("Connecting to WiFi");
+
+    WiFi.begin(ssid, password);
+
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+        Serial.print(".");
+    }
+
+    Serial.println();
+    Serial.println("WiFi connected");
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+}
+
+void connectMQTT()
+{
+    mqttClient.setServer(mqttServer, 1883);
+
+    while (!mqttClient.connected())
+    {
+        Serial.print("Connecting to MQTT...");
+
+        if (mqttClient.connect("PicoW"))
+        {
+            Serial.println("connected");
+        }
+        else
+        {
+            Serial.print("failed, rc=");
+            Serial.print(mqttClient.state());
+            Serial.println(" retrying...");
+            delay(2000);
+        }
+    }
+}
  
 struct Kalman2D
 {
@@ -251,6 +307,8 @@ void advertisementCallback(BLEAdvertisement *adv)
  
     float fx = fmaxf(0.0f, fminf(100.0f, kf.x));
     float fy = fmaxf(0.0f, fminf(100.0f, kf.y));
+    latestX = fx;
+    latestY = fy;
  
      Serial.print("raw=(");
      Serial.print(tx, 1);
@@ -508,7 +566,16 @@ void setMotionMode(MotionMode newMode)
     Serial.println("Motion mode: BACKWARD (balanced)");
 }
 }
- 
+void startReverse()
+{
+    readEncoderTicks(reverseStartLeftTicks, reverseStartRightTicks);
+
+    resetEncoderController();
+
+    robotState = GOING_HOME;   // IMPORTANT FIX (you forgot this control link)
+
+    setMotionMode(MotionMode::BACKWARD);
+}
 // =====================================================================
 // Encoder feedback controller
 // =====================================================================
@@ -655,29 +722,29 @@ void updateWheelCorrection()
         movementDirection
     );
  
-     Serial.print("Encoder L=");
-     Serial.print(currentLeftTicks);
+    //  Serial.print("Encoder L=");
+    //  Serial.print(currentLeftTicks);
  
-     Serial.print(" R=");
-     Serial.print(currentRightTicks);
+    //  Serial.print(" R=");
+    //  Serial.print(currentRightTicks);
  
-     Serial.print(" | dL=");
-     Serial.print(leftTickChange);
+    //  Serial.print(" | dL=");
+    //  Serial.print(leftTickChange);
  
-     Serial.print(" dR=");
-     Serial.print(rightTickChange);
+    //  Serial.print(" dR=");
+    //  Serial.print(rightTickChange);
  
-     Serial.print(" | error=");
-     Serial.print(normalizedError, 4);
+    //  Serial.print(" | error=");
+    //  Serial.print(normalizedError, 4);
  
-     Serial.print(" | correction=");
-     Serial.print(liveCorrection, 4);
+    //  Serial.print(" | correction=");
+    //  Serial.print(liveCorrection, 4);
  
-     Serial.print(" | motorL=");
-     Serial.print(leftCommand, 4);
+    //  Serial.print(" | motorL=");
+    //  Serial.print(leftCommand, 4);
  
-     Serial.print(" motorR=");
-     Serial.println(rightCommand, 4);
+    //  Serial.print(" motorR=");
+    //  Serial.println(rightCommand, 4);
 }
  
 // =====================================================================
@@ -779,15 +846,16 @@ void handleObstacleAvoidance()
             robotState = GOING_HOME;
  
             Serial.println("Obstacle detected.");
- 
+            setMotionMode(MotionMode::STOPPED);
+
+            waitingForCoordinates = true;
+            coordinatesSent = false;
+            waitStartTime = millis();
+
             Serial.print("Forward ticks L=");
             Serial.print(forwardLeftTicks);
             Serial.print(" R=");
             Serial.println(forwardRightTicks);
-            reverseStartLeftTicks = leftEncoderTicks;
-            reverseStartRightTicks = rightEncoderTicks;
- 
-        setMotionMode(MotionMode::BACKWARD);
         }
     }
     else if (robotState == GOING_HOME)
@@ -797,15 +865,17 @@ void handleObstacleAvoidance()
  
     readEncoderTicks(leftTicks, rightTicks);
  
-    uint32_t leftBack = leftTicks - reverseStartLeftTicks;
-    uint32_t rightBack = rightTicks - reverseStartRightTicks;
- 
-    if (leftBack >= forwardLeftTicks &&
-        rightBack >= forwardRightTicks)
+    int32_t leftBack = (int32_t)leftTicks - (int32_t)reverseStartLeftTicks;
+    int32_t rightBack = (int32_t)rightTicks - (int32_t)reverseStartRightTicks;
+
+    const uint32_t avgBack = (leftBack + rightBack) / 2;
+    const uint32_t avgForward = (forwardLeftTicks + forwardRightTicks) / 2;
+
+    if (avgBack >= avgForward && avgForward > 0)
     {
-        robotState = HOME;
-        Serial.println("Returned to start.");
-        setMotionMode(MotionMode::STOPPED);
+    robotState = HOME;
+    Serial.println("Returned to start.");
+    setMotionMode(MotionMode::STOPPED);
     }
 }
  
@@ -819,6 +889,8 @@ void setup()
 {
     Serial.begin(115200);
     delay(2000);
+    connectWiFi();
+    connectMQTT();
  
     Serial.println(
         "Starting BLE positioning, ToF and encoder correction"
@@ -828,6 +900,7 @@ void setup()
     setupEncoders();
     setupToF();
     setMotionMode(MotionMode::FORWARD);
+    resetEncoderController();
  
     kf.initialised = false;
  
@@ -843,7 +916,44 @@ void setup()
  
 void loop()
 {
+    // Maintain connections
+    if (!mqttClient.connected())
+    {
+        connectMQTT();
+    }
+
+    mqttClient.loop();
     BTstack.loop();
+
+    // =====================================================
+    // 1. Wait after obstacle detection before publishing
+    // =====================================================
+    if (waitingForCoordinates && !coordinatesSent)
+{
+    if (millis() - waitStartTime >= 10000)
+    {
+        StaticJsonDocument<128> doc;
+
+        JsonObject position = doc.createNestedObject("position");
+
+        position["x"] = (float)latestX;
+        position["y"] = (float)latestY;
+        position["z"] = 0.0;
+
+        char buffer[128];
+        serializeJson(doc, buffer);
+
+        mqttClient.publish("OR/NEW", buffer);
+
+        Serial.println("Obstacle coordinates sent:");
+        Serial.println(buffer);
+
+        coordinatesSent = true;
+        waitingForCoordinates = false;
+
+        startReverse();
+    }
+}
     handleObstacleAvoidance();
     updateWheelCorrection();
 }
