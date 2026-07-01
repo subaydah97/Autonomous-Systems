@@ -47,7 +47,7 @@ def on_message(client, userdata, msg):
                     case "SPIT":
                         print(f"obstacleCount:{obstacleCount}")
                         for obstacle in obstacles:
-                            print(obstacle)
+                            print("\t",obstacle)
                         publishRegistry(obstacles)
             case "OR/NEW":
                 id = obstacleCount

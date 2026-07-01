@@ -87,12 +87,13 @@ def add_chariot(msg):
     propertiesString += "\n}"
     
     print(propertiesString)
-    bot = rootChildrenField.importMFNodeFromString(-1, f"DEF chariot_{botID} chariot {propertiesString}")
+    bot = selfChildren.importMFNodeFromString(-1, f"DEF chariot_{botID} chariot {propertiesString}")
     
     robots.append(botID)
     
 # create the Robot instance.
 supervisor = Supervisor()
+selfChildren = supervisor.getSelf().getField('children')
 
 rootNode = supervisor.getRoot()  # get root of the scene tree
 rootChildrenField = rootNode.getField('children')
