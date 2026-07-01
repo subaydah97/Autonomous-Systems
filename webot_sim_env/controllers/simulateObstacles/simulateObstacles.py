@@ -67,7 +67,7 @@ def get_new_id(obstacleCache=obstacleCache):
 def create_obstacle(obstacle):
     
     # Create base object
-    obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Pose { translation 0 0 0 children [ Shape {geometry Sphere {radius 0.1} appearance PBRAppearance {baseColor 1 0 0 metalness 0} } ] }" 
+    obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Pose { translation 0 0 0 children [ Shape {geometry Box {size 0.1 0.1 0.1} appearance PBRAppearance {baseColor 1 0 0 metalness 0} } ] }" 
     selfChildren.importMFNodeFromString(-1, obstacleString)
 
     # Alter base object according to keys in the obstacle data
