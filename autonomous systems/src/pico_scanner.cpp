@@ -2,29 +2,30 @@
 #include <BTstackLib.h> // using BTstack as the Bluetooth stack implementation
 #include <SPI.h>        // required by BTstack for SPI communication with the Bluetooth controller
 
-#define BEACON_PREFIX "ForestBeacon"                  // prefix for the beacon names to filter in the scanner, should match the names used by the ESP32 beacons
+#define BEACON_PREFIX "ForestBeacon"                  // prefix for the beacon names to filter in the scanner
 #define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length of the beacon prefix string, excluding the null terminator
 
-// beacon `coordinates` in the environment, used for later localization calculations
+// beacon coordinates in the environment, used for trilateration
 const float BX[3] = {0.0f, 100.0f, 50.0f};
 const float BY[3] = {0.0f, 0.0f, 100.0f};
 
 // calibrated 1-unit baseline transmission powers
-// these values allow the log-distance path loss equation to calculate the correct distance
-const float TX_POWER[3] = {-22.34f, -14.98f, -8.01f}; // use calibration code from tx_power_calibration.cpp to find these values
-const float ALPHA = 0.08f;                            // smoothing factor for the exponential moving average filter applied to RSSI values, decrease if the position jumps too much, increase if it lags behind
-const float n = 2.5f;                                 // path loss exponent for distance calculation
-float rssi_avg[3] = {-100.0f, -100.0f, -100.0f};      // array to store the smoothed RSSI values for each beacon
-bool seen[3] = {false, false, false};                 // array to track whether each beacon has been seen at least once
+const float TX_POWER[3] = {-14.58f, -19.56f, -10.51f}; // use calibration code from tx_power_calibration.cpp to find these values
+
+const float ALPHA = 0.35f; // EMA smoothing factor — increase if position lags, decrease if it jumps too much
+const float n = 2.5f;      // path loss exponent for distance calculation
+
+float rssi_avg[3] = {-100.0f, -100.0f, -100.0f}; // smoothed RSSI values for each beacon
+bool seen[3] = {false, false, false};             // whether each beacon has been seen at least once
 
 struct Kalman2D
 {
-    float x, y, vx, vy; // state vector: position (x,y) and velocity (vx,vy)
-    float P[4][4];      // covariance matrix representing the uncertainty of the state estimate
+    float x, y, vx, vy; // state: position (x,y) and velocity (vx,vy)
+    float P[4][4];       // covariance matrix
 
-    float Q_pos; // position process noise
-    float Q_vel; // velocity process noise
-    float R;     // measurement noise
+    float Q_pos;
+    float Q_vel;
+    float R;
 
     bool initialised;
     unsigned long last_ms;
@@ -40,9 +41,9 @@ struct Kalman2D
             for (int j = 0; j < 4; j++)
                 P[i][j] = (i == j) ? 500.0f : 0.0f;
 
-        Q_pos = 0.1f; // decrease if position jumps too much, decrease if it lags
-        Q_vel = 0.1f; // decrease if velocity jumps too much, decrease if it lags
-        R = 80.0f;    // measurement noise, decrease if position jumps too much, increase if it lags
+        Q_pos = 0.1f;
+        Q_vel = 0.3f;
+        R = 30.0f;
 
         initialised = true;
         last_ms = millis();
@@ -102,10 +103,7 @@ struct Kalman2D
         float det = S00 * S11 - S01 * S01;
         if (fabsf(det) < 1e-6f)
         {
-            x = px;
-            y = py;
-            vx = pvx;
-            vy = pvy;
+            x = px; y = py; vx = pvx; vy = pvy;
             return;
         }
         float Si00 = S11 / det;
@@ -143,12 +141,9 @@ struct Kalman2D
 
 static int beacon_index(const char *name)
 {
-    if (strcmp(name, "ForestBeaconOne") == 0)
-        return 0;
-    if (strcmp(name, "ForestBeaconTwo") == 0)
-        return 1;
-    if (strcmp(name, "ForestBeaconThree") == 0)
-        return 2;
+    if (strcmp(name, "ForestBeaconOne") == 0)   return 0;
+    if (strcmp(name, "ForestBeaconTwo") == 0)   return 1;
+    if (strcmp(name, "ForestBeaconThree") == 0) return 2;
     return -1;
 }
 
@@ -165,15 +160,17 @@ static bool trilaterate(float *out_x, float *out_y)
     float d1 = rssi_to_distance(1, rssi_avg[1]);
     float d2 = rssi_to_distance(2, rssi_avg[2]);
 
-    float x1 = BX[0], y1 = BY[0], x2 = BX[1], y2 = BY[1], x3 = BX[2], y3 = BY[2]; // beacon coordinates
+    float x1 = BX[0], y1 = BY[0];
+    float x2 = BX[1], y2 = BY[1];
+    float x3 = BX[2], y3 = BY[2];
 
     // trilateration math to solve for (x,y) given the three circles defined by (x1,y1,d0), (x2,y2,d1), (x3,y3,d2)
     float A = 2 * (x2 - x1);
     float B = 2 * (y2 - y1);
-    float C = d0 * d0 - d1 * d1 - x1 * x1 + x2 * x2 - y1 * y1 + y2 * y2;
+    float C = d0*d0 - d1*d1 - x1*x1 + x2*x2 - y1*y1 + y2*y2;
     float D = 2 * (x3 - x1);
     float E = 2 * (y3 - y1);
-    float F = d0 * d0 - d2 * d2 - x1 * x1 + x3 * x3 - y1 * y1 + y3 * y3;
+    float F = d0*d0 - d2*d2 - x1*x1 + x3*x3 - y1*y1 + y3*y3;
 
     float det = A * E - B * D;
     if (fabsf(det) < 0.001f)
@@ -187,7 +184,7 @@ static bool trilaterate(float *out_x, float *out_y)
 static bool parse_name(const uint8_t *data, uint8_t max_len, char *out, uint8_t out_size)
 {
     int i = 0;
-    while (i < max_len) // loop through the advertisement data chunks to find the one containing the device name
+    while (i < max_len)
     {
         uint8_t chunk_len = data[i];
         if (chunk_len == 0 || i + chunk_len > max_len)
@@ -221,56 +218,45 @@ void advertisementCallback(BLEAdvertisement *adv)
 
     float rssi = (float)adv->getRssi();
 
-    constexpr float MAX_RSSI_JUMP = 8.0f; // dB
-    if (seen[idx] && fabsf(rssi - rssi_avg[idx]) > MAX_RSSI_JUMP)
-    {
-        // ignore this one sample, likely a multipath spike
-        return;
-    }
-
+    // EMA update
     if (!seen[idx])
     {
         rssi_avg[idx] = rssi;
         seen[idx] = true;
     }
     else
+    {
         rssi_avg[idx] = ALPHA * rssi + (1.0f - ALPHA) * rssi_avg[idx];
+    }
 
-    // debug prints to monitor the RSSI values, distance estimates, and final position estimates
-    Serial.print("r0=");
-    Serial.print(rssi_avg[0], 1);
-    Serial.print(" r1=");
-    Serial.print(rssi_avg[1], 1);
-    Serial.print(" r2=");
-    Serial.println(rssi_avg[2], 1);
+    Serial.print("r0="); Serial.print(rssi_avg[0], 1);
+    Serial.print(" r1="); Serial.print(rssi_avg[1], 1);
+    Serial.print(" r2="); Serial.println(rssi_avg[2], 1);
 
-    Serial.print("d0=");
-    Serial.print(rssi_to_distance(0, rssi_avg[0]), 1);
-    Serial.print(" d1=");
-    Serial.print(rssi_to_distance(1, rssi_avg[1]), 1);
-    Serial.print(" d2=");
-    Serial.println(rssi_to_distance(2, rssi_avg[2]), 1);
+    Serial.print("d0="); Serial.print(rssi_to_distance(0, rssi_avg[0]), 1);
+    Serial.print(" d1="); Serial.print(rssi_to_distance(1, rssi_avg[1]), 1);
+    Serial.print(" d2="); Serial.println(rssi_to_distance(2, rssi_avg[2]), 1);
 
-    // perform trilateration to estimate the (x,y) position based on the distances to the three beacons
+    if (!seen[0] || !seen[1] || !seen[2])
+        return;
+
     float tx, ty;
     if (!trilaterate(&tx, &ty))
         return;
-
-    // feed raw trilaterated position into kalman filter
+    // apply Kalman filter to smooth the position
     kf.update(tx, ty);
-
-    // clamp inside your physical boundary lines and print
-    float fx = fmaxf(0.0f, fminf(100.0f, kf.x));
-    float fy = fmaxf(0.0f, fminf(100.0f, kf.y));
+    // constrain the filtered position to the environment bounds
+    kf.x = fmaxf(0.0f, fminf(100.0f, kf.x));
+    kf.y = fmaxf(0.0f, fminf(100.0f, kf.y));
 
     Serial.print("raw=(");
     Serial.print(tx, 1);
     Serial.print(",");
     Serial.print(ty, 1);
     Serial.print(")  kf=(");
-    Serial.print(fx, 1);
+    Serial.print(kf.x, 1);
     Serial.print(",");
-    Serial.print(fy, 1);
+    Serial.print(kf.y, 1);
     Serial.println(")");
 }
 
@@ -278,7 +264,7 @@ void setup()
 {
     Serial.begin(115200);
     delay(2000);
-    kf.initialised = false; // ensure kalman filter starts uninitialised so it can set its initial state on the first measurement
+    kf.initialised = false;
     Serial.println("pico is scanning..");
     BTstack.setBLEAdvertisementCallback(advertisementCallback);
     BTstack.setup();
