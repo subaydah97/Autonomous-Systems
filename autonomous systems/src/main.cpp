@@ -22,6 +22,8 @@ PubSubClient mqttClient(wifiClient);
 bool waitingForCoordinates = false;
 bool coordinatesSent = false;
 unsigned long waitStartTime = 0;
+unsigned long lastTelemetryMs = 0;
+const int TELEMETRY_INTERVAL_MS = 1000 / 24; // ~41ms
 
 float latestX = 0.0f;
 float latestY = 0.0f;
@@ -927,7 +929,6 @@ void setup()
  
 void loop()
 {
-    // Maintain connections
     if (!mqttClient.connected())
     {
         connectMQTT();
@@ -936,34 +937,49 @@ void loop()
     mqttClient.loop();
     BTstack.loop();
 
-    // Wait after obstacle detection before publishing
-
+    // =====================================================
+    // 1. OBSTACLE PUBLISH (ONE TIME ONLY)
+    // =====================================================
     if (waitingForCoordinates && !coordinatesSent)
-{
-    if (millis() - waitStartTime >= 10000)
     {
-        StaticJsonDocument<128> doc;
+        if (millis() - waitStartTime >= 10000)
+        {
+            JsonDocument doc;
 
-        JsonObject position = doc.createNestedObject("position");
+            JsonObject position = doc["position"].to<JsonObject>();
+            position["x"] = latestX;
+            position["y"] = latestY;
+            position["z"] = 0.0;
 
-        position["x"] = (float)latestX;
-        position["y"] = (float)latestY;
-        position["z"] = 0.0;
+            char buffer[128];
+            serializeJson(doc, buffer);
 
-        char buffer[128];
-        serializeJson(doc, buffer);
+            mqttClient.publish("OR/NEW", buffer);
 
-        mqttClient.publish("OR/NEW", buffer);
+            Serial.println("Obstacle sent:");
+            Serial.println(buffer);
 
-      
-    // Second publish 
-        StaticJsonDocument<128> botDoc;
+            coordinatesSent = true;
+            waitingForCoordinates = false;
 
-        JsonObject pos = botDoc.createNestedObject("position");
-        pos["x"] = (float)latestX;
-        pos["y"] = (float)latestY;
+            startReverse();
+        }
+    }
 
-        JsonObject wheels = botDoc.createNestedObject("wheels");
+    // =====================================================
+    // 2. TELEMETRY STREAM (24 Hz ALWAYS)
+    // =====================================================
+    if (millis() - lastTelemetryMs >= TELEMETRY_INTERVAL_MS)
+    {
+        lastTelemetryMs = millis();
+
+        JsonDocument botDoc;
+
+        JsonObject pos = botDoc["position"].to<JsonObject>();
+        pos["x"] = latestX;
+        pos["y"] = latestY;
+
+        JsonObject wheels = botDoc["wheels"].to<JsonObject>();
 
         float lRad, rRad;
         getWheelRadians(lRad, rRad);
@@ -974,19 +990,11 @@ void loop()
         char botBuffer[128];
         serializeJson(botDoc, botBuffer);
 
-        mqttClient.publish(_telemetry_target, botBuffer);
+        mqttClient.publish("bot/1", botBuffer);
 
-        // =====================================================
-
-        Serial.println("Obstacle coordinates sent:");
-        Serial.println(buffer);
-
-        coordinatesSent = true;
-        waitingForCoordinates = false;
-
-        startReverse();
+        Serial.println(botBuffer);
     }
-}
+
     handleObstacleAvoidance();
     updateWheelCorrection();
 }
