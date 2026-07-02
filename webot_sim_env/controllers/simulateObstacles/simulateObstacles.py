@@ -113,6 +113,8 @@ def update_obstacle(obstacle):
        print(PRFX,"Updated obstacle doesn't exist:",obstacle["id"])
        print(PRFX,"Creating instead.")
        create_obstacle(obstacle)
+       print(PRFX,"Creation complete, terminating update routine")
+       return
 
     # Alter base object according to keys in the obstacle data
     if len(obstacle["payload"].keys()) < 1: raise Exception("Broken payload")
