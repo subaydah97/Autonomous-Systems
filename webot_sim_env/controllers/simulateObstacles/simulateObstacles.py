@@ -2,7 +2,7 @@
 
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, Motor, DistanceSensor
-from controller import Supervisor
+from controller import Supervisor, Node
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 import json
@@ -58,11 +58,17 @@ def on_message(client, userdata, msg):
                 obstacle = json.loads(msg.payload)
                 formattedObstacle = {"id":get_new_id(),"payload":obstacle}
                 create_obstacle(formattedObstacle)
+            except Exception as exception:
+                print(PRFX,msg.topic,exception)
+                remove_obstacle(obstacle["id"])                 
+        case "OR/MOV":
+            try:
+                obstacle = json.loads(msg.payload)
+                update_obstacle(obstacle)
             except json.decoder.JSONDecodeError as exception:
                 print(PRFX,exception)
             except Exception as exception:
-                print(PRFX,exception)                 
-
+                print(PRFX,exception)                   
         case "OR/REM":
             remove_obstacle(int(msg.payload))
         case _:
@@ -84,13 +90,34 @@ def create_obstacle(obstacle):
     # Create base object
     obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Pose { translation 0 0 0 children [ Shape {geometry Box {size 0.1 0.1 0.1} appearance PBRAppearance {baseColor 1 0 0 metalness 0} } ] }" 
     selfChildren.importMFNodeFromString(-1, obstacleString)
-
-    # Alter base object according to keys in the obstacle data
-    node = robot.getFromDef(f"obstacle_{obstacle["id"]}")
     
+    node = robot.getFromDef(f"obstacle_{obstacle["id"]}")
     obstacleCache.append({"id":obstacle["id"],"node":node})
 
+
+    # Alter base obstacle according to keys in obstacle wrapper
+    update_obstacle(obstacle)
+
+def update_obstacle(obstacle):
+    #Get webot node of obstacle
+    #print(PRFX,"Updating:",obstacle)
+    node = None
+    
+    for obstacleLookup in obstacleCache:
+        if obstacleLookup["id"] == obstacle["id"]:
+            node = obstacleLookup["node"]
+            #print(PRFX,"Found:",obstacleLookup)
+            break
+
+    if not isinstance(node,Node):
+       print(PRFX,"Updated obstacle doesn't exist:",obstacle["id"])
+       print(PRFX,"Creating instead.")
+       create_obstacle(obstacle)
+
+    # Alter base object according to keys in the obstacle data
+    if len(obstacle["payload"].keys()) < 1: raise Exception("Broken payload")
     for key in obstacle["payload"].keys():
+        #print(PRFX,"Updating field:"+key)
         field = obstacle["payload"][key]
         match key:
             case "position":
@@ -101,7 +128,7 @@ def create_obstacle(obstacle):
                 # Used to remove confusing prints from the cmd
                 1 == 1
             case _:
-                print(PRFX,"Field not accounted for:",key)
+                print(PRFX,"Creating obstacle:",obstacle["id"],"\tField not accounted for:",key)    
 
 def remove_obstacle(obstacleID):
                 try:

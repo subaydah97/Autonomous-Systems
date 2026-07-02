@@ -21,9 +21,11 @@ class doesNotExist(Exception):
     1==1
 
 # Functions
-def publishRegistry(obstacles):
+def publishRegistry():
+    global obstacles
     publish.single("OR/COMPLETE_REGISTRY", json.dumps(obstacles), hostname=HOSTNAME)
 def printOR():
+    global obstacles
     print(f"obstacleCount:{obstacleCount}")
     for obstacle in obstacles:
         print("\t",obstacle)
@@ -32,6 +34,11 @@ def printOR():
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f"obstacle_registry: Connected with result code {reason_code}")
     client.subscribe("OR/#")
+    
+    printOR()
+    publishRegistry()
+
+
 
 
 # The callback for when a PUBLISH message is received from the server.
@@ -55,7 +62,7 @@ def on_message(client, userdata, msg):
                         persistFlag = 0
                     case "SPIT":
                        printOR()
-                       publishRegistry(obstacles)
+                       publishRegistry()
                     case _:
                         print("Unacounted for command:",decoded_payload)
             case "OR/NEW":
@@ -70,7 +77,7 @@ def on_message(client, userdata, msg):
                 
                 print(f'added obstacle:"{obstacles[-1]}"')
 
-            case "OR/MOVE":
+            case "OR/MOV":
                 try:
                     updatedObstacle = json.loads(msg.payload)
                     obstacleExistsFlag = False
@@ -88,6 +95,7 @@ def on_message(client, userdata, msg):
                     obstacles.append(updatedObstacle)
                 except Exception as e:
                     print("Failed updating obstacle:",e)
+                #publishRegistry()
 
             case "OR/REM":
                 try:
@@ -113,7 +121,6 @@ try:
 except Exception as e:
     print("Recovering obstacle count failed:",e)
 
-printOR()
 
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
@@ -136,7 +143,7 @@ try:
 except Exception as e:
     print("attempt failed:",e)
     print("Performing death-cry.")
-    publishRegistry(obstacles)
+    publishRegistry()
 else: 
     print("attempt success.")
 
