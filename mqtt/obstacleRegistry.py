@@ -136,14 +136,16 @@ while persistFlag > 0:
 # Cleanup
 print(f"exiting with code:{persistFlag}")
 
+print("Performing death-cry.")
+publishRegistry()
+
 print("attempting to save obstacles to file")
 try:
     with open("./mqtt/obstacles.pickle", "wb") as saveFile:
         pickle.dump(obstacles,saveFile)
 except Exception as e:
     print("attempt failed:",e)
-    print("Performing death-cry.")
-    publishRegistry()
+
 else: 
     print("attempt success.")
 
