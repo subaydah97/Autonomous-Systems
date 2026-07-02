@@ -16,9 +16,18 @@ persistFlag = 1
 
 HOSTNAME = "localhost"
 
+# Exceptions
+class doesNotExist(Exception):
+    1==1
+
 # Functions
 def publishRegistry(obstacles):
     publish.single("OR/COMPLETE_REGISTRY", json.dumps(obstacles), hostname=HOSTNAME)
+def printOR():
+    print(f"obstacleCount:{obstacleCount}")
+    for obstacle in obstacles:
+        print("\t",obstacle)
+ 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f"obstacle_registry: Connected with result code {reason_code}")
@@ -45,11 +54,12 @@ def on_message(client, userdata, msg):
                         print("TERM command received, lowering persist flag")
                         persistFlag = 0
                     case "SPIT":
-                        print(f"obstacleCount:{obstacleCount}")
-                        for obstacle in obstacles:
-                            print("\t",obstacle)
-                        publishRegistry(obstacles)
+                       printOR()
+                       publishRegistry(obstacles)
+                    case _:
+                        print("Unacounted for command:",decoded_payload)
             case "OR/NEW":
+                # USed to receive new payloads
                 id = obstacleCount
                 obstacleCount += 1
                 try:
@@ -59,6 +69,25 @@ def on_message(client, userdata, msg):
                     obstacles.append({"id":id,"payload":str(msg.payload.decode("utf-8"))})
                 
                 print(f'added obstacle:"{obstacles[-1]}"')
+
+            case "OR/MOVE":
+                try:
+                    updatedObstacle = json.loads(msg.payload)
+                    obstacleExistsFlag = False
+                    for obstacle in obstacles:
+                        if obstacle["id"] == updatedObstacle["id"]:
+                            obstacle["payload"] = updatedObstacle["payload"]
+                            print("Updated obstacle:",obstacle)
+                            obstacleExistsFlag = True
+                            break
+                    if obstacleExistsFlag: return
+                    raise doesNotExist("Obstacle doesn't exist")
+                except doesNotExist as e:
+                    print(e)
+                    print("Creating obstacle instead")
+                    obstacles.append(updatedObstacle)
+                except Exception as e:
+                    print("Failed updating obstacle:",e)
 
             case "OR/REM":
                 try:
@@ -83,6 +112,8 @@ try:
     obstacleCount = int(obstacles[-1]["id"]) + 1
 except Exception as e:
     print("Recovering obstacle count failed:",e)
+
+printOR()
 
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect

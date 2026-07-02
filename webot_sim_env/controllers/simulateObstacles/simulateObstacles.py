@@ -44,12 +44,25 @@ def on_message(client, userdata, msg):
 
             for obstacle in obstacles:
                 print(PRFX,obstacle)
-                create_obstacle(obstacle)
-                
+                try:
+                    create_obstacle(obstacle)
+                except AttributeError as e:
+                    remove_obstacle(obstacle["id"])
+                    print(PRFX,e)
+                except Exception as e:
+                    print(PRFX,e)
+                     
+
         case "OR/NEW":
-            obstacle = json.loads(msg.payload)
-            formattedObstacle = {"id":get_new_id(),"payload":obstacle}
-            create_obstacle(formattedObstacle)
+            try:
+                obstacle = json.loads(msg.payload)
+                formattedObstacle = {"id":get_new_id(),"payload":obstacle}
+                create_obstacle(formattedObstacle)
+            except json.decoder.JSONDecodeError as exception:
+                print(PRFX,exception)
+            except Exception as exception:
+                print(PRFX,exception)                 
+
         case "OR/REM":
             remove_obstacle(int(msg.payload))
         case _:
@@ -66,6 +79,8 @@ def get_new_id(obstacleCache=obstacleCache):
 
 def create_obstacle(obstacle):
     
+    if isinstance(obstacle["payload"],str): print(PRFX,"Atribute error caught. Object not created"); return
+
     # Create base object
     obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Pose { translation 0 0 0 children [ Shape {geometry Box {size 0.1 0.1 0.1} appearance PBRAppearance {baseColor 1 0 0 metalness 0} } ] }" 
     selfChildren.importMFNodeFromString(-1, obstacleString)
@@ -94,10 +109,8 @@ def remove_obstacle(obstacleID):
                         if obstacle["id"] == obstacleID: 
                             print(PRFX,f'removing obstacle:"{obstacle}"')
                             obstacle["node"].remove()
-                   
-
                 except Exception as e:
-                        print("Obstacle removal error:"+'"'+msg.payload.decode("utf-8")+'"',e)
+                        print(PRFX,"Obstacle removal error:"+'"'+msg.payload.decode("utf-8")+'"',e)
 
 def remove_all_obstacles():
     global obstacleCache
