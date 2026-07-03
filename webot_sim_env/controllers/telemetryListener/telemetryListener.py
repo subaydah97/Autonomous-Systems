@@ -5,6 +5,7 @@
 from controller import Supervisor
 import paho.mqtt.client as mqtt
 import json
+import traceback
 
 # def setSFFloat(self, value):
 # def setSFRotation(self, values):
@@ -27,6 +28,7 @@ def on_message(client, userdata, msg):
         decodedPayload = json.loads(msg.payload)
     except Exception as e:
         print(PRFX,e)
+        traceback.print_tb(e.__traceback__)
         print({PRFX,"Ignoring faulty formatted message"})
         return
     #print(json.dumps(decodedPayload))

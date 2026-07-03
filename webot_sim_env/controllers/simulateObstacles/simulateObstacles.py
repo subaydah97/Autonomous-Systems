@@ -88,7 +88,7 @@ def create_obstacle(obstacle):
     if isinstance(obstacle["payload"],str): print(PRFX,"Atribute error caught. Object not created"); return
 
     # Create base object
-    obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Solid { translation 0 0 0 geometry Box {size 0.1 0.1 0.1} children [ Shape {geometry Box {size 0.1 0.1 0.1} appearance PBRAppearance {baseColor 1 0 0 metalness 0} } ] }" 
+    obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Solid { translation 0 0 0 boundingObject Box {size 0.1 0.1 0.1} children [ Shape {geometry Box {size 0.1 0.1 0.1} appearance PBRAppearance {baseColor 1 0 0 metalness 0} } ] }" 
     selfChildren.importMFNodeFromString(-1, obstacleString)
     
     node = robot.getFromDef(f"obstacle_{obstacle["id"]}")
