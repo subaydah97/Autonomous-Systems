@@ -24,9 +24,12 @@ bool coordinatesSent = false;
 unsigned long waitStartTime = 0;
 unsigned long lastTelemetryMs = 0;
 const int TELEMETRY_INTERVAL_MS = 1000 / 24; // ~41ms
+bool firstTelemetryPrinted = false;
+bool telemetryEnabled = false;
 
-float latestX = 0.0f;
+float latestX = -400.0f;
 float latestY = 0.0f;
+float latestZ = 0.0f;
  
 // beacon coordinates in the environment, used for trilateration
 const float BX[3] = {0.0f, 100.0f, 50.0f};
@@ -540,7 +543,10 @@ void setMotionMode(MotionMode newMode)
         return;
  
     motionMode = newMode;
- 
+
+     // Telemetry alleen actief wanneer de chariot rijdt
+    telemetryEnabled = (motionMode != MotionMode::STOPPED);
+    
     if (motionMode == MotionMode::STOPPED)
     {
         stopMotors();
@@ -947,9 +953,9 @@ void loop()
             JsonDocument doc;
 
             JsonObject position = doc["position"].to<JsonObject>();
-            position["x"] = latestX;
-            position["y"] = latestY;
-            position["z"] = 0.0;
+            position["x"] = latestX / 100.0f;
+            position["y"] = latestY / 100.0f;
+            position["z"] = latestZ / 100.0f;
 
             char buffer[128];
             serializeJson(doc, buffer);
@@ -969,15 +975,19 @@ void loop()
     // =====================================================
     // 2. TELEMETRY STREAM (24 Hz ALWAYS)
     // =====================================================
-    if (millis() - lastTelemetryMs >= TELEMETRY_INTERVAL_MS)
+    if (
+    telemetryEnabled &&
+    millis() - lastTelemetryMs >= TELEMETRY_INTERVAL_MS
+)
     {
         lastTelemetryMs = millis();
 
         JsonDocument botDoc;
 
         JsonObject pos = botDoc["position"].to<JsonObject>();
-        pos["x"] = latestX;
-        pos["y"] = latestY;
+        pos["x"] = latestX / 100.0f;
+        pos["y"] = latestY / 100.0f;
+        pos["z"] = latestZ / 100.0f;
 
         JsonObject wheels = botDoc["wheels"].to<JsonObject>();
 
@@ -992,7 +1002,16 @@ void loop()
 
         mqttClient.publish("bot/1", botBuffer);
 
-        Serial.println(botBuffer);
+        // Print de eerste telemetrypositie maar één keer
+        if (!firstTelemetryPrinted)
+        {
+            Serial.println("First telemetry position:");
+            Serial.println(botBuffer);
+
+            firstTelemetryPrinted = true;
+        }
+
+        
     }
 
     handleObstacleAvoidance();
