@@ -2,6 +2,7 @@ import time
 import json
 import paho.mqtt.publish as publish
 import math
+import sys
 
 HOSTNAME = "localhost"
 
@@ -23,7 +24,7 @@ obstacle["payload"] = {"position":{
 
 publish.single("OR/MOV", f"{json.dumps(obstacle)}", hostname=HOSTNAME)
 
-update_freq = 4
+update_freq = 12
 
 time_step = 0
 

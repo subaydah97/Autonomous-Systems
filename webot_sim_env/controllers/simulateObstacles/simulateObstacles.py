@@ -56,6 +56,10 @@ def on_message(client, userdata, msg):
         case "OR/NEW":
             try:
                 obstacle = json.loads(msg.payload)
+            except Exception as e:
+                print(PRFX,"JSON faulty formatting detected, ignoring message.")
+                return
+            try:
                 formattedObstacle = {"id":get_new_id(),"payload":obstacle}
                 create_obstacle(formattedObstacle)
             except Exception as exception:
