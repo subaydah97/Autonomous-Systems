@@ -27,6 +27,7 @@ def on_message(client, userdata, msg):
         decodedPayload = json.loads(msg.payload)
     except Exception as e:
         print(PRFX,e)
+        print({PRFX,"Ignoring faulty formatted message"})
         return
     #print(json.dumps(decodedPayload))
     
