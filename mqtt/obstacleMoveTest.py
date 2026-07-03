@@ -1,10 +1,11 @@
 import time
 import json
 import paho.mqtt.publish as publish
+import math
 
 HOSTNAME = "localhost"
 
-publish.single("OR/COMMANDS", f"CLEAR", hostname=HOSTNAME)
+#publish.single("OR/COMMANDS", f"CLEAR", hostname=HOSTNAME)
 
 obstacle = {"id":101}
 obstacle["payload"] = {"position":{
@@ -22,16 +23,25 @@ obstacle["payload"] = {"position":{
 
 publish.single("OR/MOV", f"{json.dumps(obstacle)}", hostname=HOSTNAME)
 
-update_freq = 8
+update_freq = 4
 
-obstacle["payload"].pop("position")
+time_step = 0
+
+height_offset = 0.4
 
 while 1 == 1:
+    time_step += 1
+
     publish.single("OR/MOV", f"{json.dumps(obstacle)}", hostname=HOSTNAME)
 
     obstacle["payload"]["rotation"]["radians"] += 1/update_freq
     obstacle["payload"]["rotation"]["x"] += 1/update_freq
     obstacle["payload"]["rotation"]["z"] -= 2/update_freq
+
+    obstacle["payload"]["position"]["z"] = math.sin(1/update_freq * time_step)/4 + height_offset
+    obstacle["payload"]["position"]["y"] = math.cos(1/update_freq * time_step)/4 
+    obstacle["payload"]["position"]["x"] = math.tan(1/4/update_freq * time_step)/4 
+
     time.sleep(1/update_freq)
     pass
 publish.single("OR/REM", f"{obstacle["id"]}", hostname=HOSTNAME)
