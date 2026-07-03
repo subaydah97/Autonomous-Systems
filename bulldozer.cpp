@@ -4,11 +4,42 @@
 #include <Wire.h>       // I2C for the ToF sensor
 #include <VL53L1X.h>    // ToF distance sensor
 #include <Servo.h>      // motor control via PWM "servo" pulses
- 
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
  
 #define BEACON_PREFIX "ForestBeacon"                  // prefix used to filter beacon names in the scanner
 #define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length excluding the null terminator
- 
+#define _telemetry_target "bot/2"
+
+const char* ssid = "mn-92937";
+const char* password = "12345679";
+
+const char* mqttServer = "192.168.212.106";
+const char* OBSTACLE_TOPIC = "OR/NEW";
+
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+
+unsigned long lastTelemetryMs = 0;
+
+const int TELEMETRY_INTERVAL_MS =
+    1000 / 24; // Approximately 41 ms
+
+bool firstTelemetryPrinted = false;
+bool telemetryEnabled = false;
+
+float latestXcm = -400.0f;
+float latestYcm = 0.0f;
+float latestZcm = 0.0f;
+
+// Obstacle target received from bot 1
+float targetXcm = 0.0f;
+float targetYcm = 0.0f;
+float targetZcm = 0.0f;
+
+bool newObstacleTargetReceived = false;
+
 // beacon coordinates in the environment, used for trilateration
 const float BX[3] = {0.0f, 100.0f, 50.0f};
 const float BY[3] = {0.0f, 0.0f, 100.0f};
@@ -20,6 +51,51 @@ const float n = 2.5f;      // path loss exponent for distance calculation
 float rssi_avg[3] = {-100.0f, -100.0f, -100.0f};
 bool seen[3] = {false, false, false};
  
+void connectWiFi()
+{
+    Serial.print("Connecting to WiFi");
+
+    WiFi.begin(ssid, password);
+
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+        Serial.print(".");
+    }
+
+    Serial.println();
+    Serial.println("WiFi connected");
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+}
+
+void connectMQTT()
+{
+    mqttClient.setServer(mqttServer, 1883);
+
+    while (!mqttClient.connected())
+    {
+        Serial.print("Connecting to MQTT...");
+
+        // Must be different from bot 1
+        if (mqttClient.connect("PicoW_Bulldozer"))
+        {
+            Serial.println("connected");
+
+            mqttClient.subscribe(OBSTACLE_TOPIC);
+
+            Serial.println("Subscribed to OR/NEW");
+        }
+        else
+        {
+            Serial.print("failed, rc=");
+            Serial.print(mqttClient.state());
+            Serial.println(" retrying...");
+
+            delay(2000);
+        }
+    }
+}
 struct Kalman2D
 {
     float x, y, vx, vy; // state: position (x,y) and velocity (vx,vy)
@@ -326,6 +402,7 @@ Servo rightMotor;
  
 enum RobotState
 {
+    WAITING_FOR_TARGET,
     GOING_OUT,
     GOING_HOME,
     HOME
@@ -338,7 +415,7 @@ enum class MotionMode
     BACKWARD
 };
  
-RobotState robotState = GOING_OUT;
+RobotState robotState = WAITING_FOR_TARGET;
 MotionMode motionMode = MotionMode::STOPPED;
  
  
@@ -406,6 +483,29 @@ void readEncoderTicks(uint32_t &leftTicks, uint32_t &rightTicks)
     rightTicks = rightEncoderTicks;
  
     interrupts();
+}
+
+constexpr float WHEEL_TICK_TO_RAD =
+    (2.0f * PI) / 10.0f;
+
+void getWheelRadians(
+    float &leftRadians,
+    float &rightRadians
+)
+{
+    uint32_t leftTicks;
+    uint32_t rightTicks;
+
+    readEncoderTicks(
+        leftTicks,
+        rightTicks
+    );
+
+    leftRadians =
+        leftTicks * WHEEL_TICK_TO_RAD;
+
+    rightRadians =
+        rightTicks * WHEEL_TICK_TO_RAD;
 }
  
 // =====================================================================
@@ -476,10 +576,13 @@ void resetEncoderController()
  
 void setMotionMode(MotionMode newMode)
 {
+
     if (motionMode == newMode)
         return;
  
     motionMode = newMode;
+    telemetryEnabled =
+        motionMode != MotionMode::STOPPED;
  
     if (motionMode == MotionMode::STOPPED)
     {
@@ -819,6 +922,83 @@ void handleObstacleAvoidance()
         }
     }
 }
+
+void mqttCallback(
+    char *topic,
+    byte *payload,
+    unsigned int length
+)
+{
+    if (strcmp(topic, OBSTACLE_TOPIC) != 0)
+    {
+        return;
+    }
+
+    JsonDocument doc;
+
+    DeserializationError error =
+        deserializeJson(doc, payload, length);
+
+    if (error)
+    {
+        Serial.print("Invalid obstacle JSON: ");
+        Serial.println(error.c_str());
+        return;
+    }
+
+    JsonObjectConst position =
+        doc["position"].as<JsonObjectConst>();
+
+    if (position.isNull())
+    {
+        Serial.println(
+            "Obstacle message has no position."
+        );
+        return;
+    }
+
+    // Bot 1 sends meters.
+    // Convert received values back to centimeters internally.
+    targetXcm =
+        position["x"].as<float>() * 100.0f;
+
+    targetYcm =
+        position["y"].as<float>() * 100.0f;
+
+    targetZcm =
+        position["z"].as<float>() * 100.0f;
+
+    newObstacleTargetReceived = true;
+
+    Serial.println("Obstacle target received.");
+
+    Serial.print("Target in centimeters: x=");
+    Serial.print(targetXcm);
+
+    Serial.print(" y=");
+    Serial.print(targetYcm);
+
+    Serial.print(" z=");
+    Serial.println(targetZcm);
+
+    if (robotState == WAITING_FOR_TARGET)
+{
+    newObstacleTargetReceived = false;
+    pushingObstacle = false;
+
+    robotState = GOING_OUT;
+
+    resetEncoderController();
+
+    Serial.println(
+        "Starting bulldozer movement."
+    );
+
+    setMotionMode(
+        MotionMode::FORWARD
+    );
+}
+}
  
 // =====================================================================
 // Main setup and loop
@@ -828,31 +1008,106 @@ void setup()
 {
     Serial.begin(115200);
     delay(2000);
- 
+
     Serial.println(
-        "Starting BLE positioning, ToF and encoder correction"
+        "Starting bulldozer."
     );
- 
+
     setupMotors();
     setupEncoders();
     setupToF();
-    setMotionMode(MotionMode::FORWARD);
- 
-    kf.initialised = false;
- 
-    BTstack.setBLEAdvertisementCallback(
-        advertisementCallback
+
+    mqttClient.setCallback(
+        mqttCallback
     );
- 
-    BTstack.setup();
-    BTstack.bleStartScanning();
- 
-    Serial.println("Pico is scanning and driving.");
+
+    connectWiFi();
+    connectMQTT();
+
+    robotState =
+        WAITING_FOR_TARGET;
+
+    Serial.println(
+        "Bulldozer waiting for obstacle data..."
+    );
 }
  
 void loop()
 {
-    BTstack.loop();
+    if (!mqttClient.connected())
+    {
+        connectMQTT();
+    }
+
+    mqttClient.loop();
+
+    // =====================================================
+    // BOT 2 TELEMETRY STREAM
+    // =====================================================
+    if (
+        telemetryEnabled &&
+        millis() - lastTelemetryMs >=
+            TELEMETRY_INTERVAL_MS
+    )
+    {
+        lastTelemetryMs = millis();
+
+        JsonDocument botDoc;
+
+        JsonObject pos =
+            botDoc["position"]
+                .to<JsonObject>();
+
+        // Internal centimetres to Webots metres
+        pos["x"] = latestXcm / 100.0f;
+        pos["y"] = latestYcm / 100.0f;
+        pos["z"] = latestZcm / 100.0f;
+
+        JsonObject wheels =
+            botDoc["wheels"]
+                .to<JsonObject>();
+
+        float lRad;
+        float rRad;
+
+        getWheelRadians(
+            lRad,
+            rRad
+        );
+
+        wheels[
+            "radian_position_wheel_left"
+        ] = lRad;
+
+        wheels[
+            "radian_position_wheel_right"
+        ] = rRad;
+
+        char botBuffer[128];
+
+        serializeJson(
+            botDoc,
+            botBuffer
+        );
+
+        mqttClient.publish(
+            _telemetry_target,
+            botBuffer
+        );
+
+        // Print only the first telemetry message
+        if (!firstTelemetryPrinted)
+        {
+            Serial.println(
+                "First bulldozer telemetry:"
+            );
+
+            Serial.println(botBuffer);
+
+            firstTelemetryPrinted = true;
+        }
+    }
+
     handleObstacleAvoidance();
     updateWheelCorrection();
 }
