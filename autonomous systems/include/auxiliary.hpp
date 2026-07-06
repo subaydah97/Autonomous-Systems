@@ -70,6 +70,7 @@ auto read_int(bool doIncrement = true)
 // Functions
 // -------------------------
 
+// Tokenizes input. Resets token pointer
 void tokenize_input(char *command_string = command_string, char *tokens[command_tokens] = tokens, uint8_t &tp = tp)
 {
     // Reset token pointer
@@ -163,9 +164,11 @@ void estop(char *command_string, char *tokens[16], uint8_t &tp)
 
 // Routines
 
-// Outline, must be finished
-void mqtt_message_received(char *command_string = command_string, char *tokens[command_tokens] = tokens, uint8_t &tp = tp)
+// Handles messages to BOT/<id>/COMMANDS
+void handle_command_message(const char *string)
 {
+    strcpy(command_string, string);
+
     // Tokennize input
     tokenize_input(command_string, tokens, tp);
 
