@@ -6,13 +6,13 @@
 #define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length of the beacon prefix string, excluding the null terminator
 
 // beacon coordinates in the environment, used for trilateration
-const float BX[3] = {0.0f, 100.0f, 50.0f};
-const float BY[3] = {0.0f, 0.0f, 100.0f};
+const float BX[3] = {0.0f, 400.0f, 200.0f};
+const float BY[3] = {0.0f, 0.0f, 400.0f};
 
 // calibrated 1-unit baseline transmission powers
-const float TX_POWER[3] = {-14.58f, -19.56f, -10.51f}; // use calibration code from tx_power_calibration.cpp to find these values
+const float TX_POWER[3] = {-14.13f, -8.93f, -19.21f}; // use calibration code from tx_power_calibration.cpp to find these values
 
-const float ALPHA = 0.35f; // EMA smoothing factor — increase if position lags, decrease if it jumps too much
+const float ALPHA = 0.20f; // EMA smoothing factor — increase if position lags, decrease if it jumps too much
 const float n = 2.5f;      // path loss exponent for distance calculation
 
 float rssi_avg[3] = {-100.0f, -100.0f, -100.0f}; // smoothed RSSI values for each beacon
@@ -41,8 +41,8 @@ struct Kalman2D
             for (int j = 0; j < 4; j++)
                 P[i][j] = (i == j) ? 500.0f : 0.0f;
 
-        Q_pos = 0.1f;
-        Q_vel = 0.3f;
+        Q_pos = 0.3f; // increase if position lags, decrease if it jumps too much
+        Q_vel = 0.5f; // increase if position lags, decrease if it jumps too much
         R = 30.0f;
 
         initialised = true;
@@ -246,8 +246,8 @@ void advertisementCallback(BLEAdvertisement *adv)
     // apply Kalman filter to smooth the position
     kf.update(tx, ty);
     // constrain the filtered position to the environment bounds
-    kf.x = fmaxf(0.0f, fminf(100.0f, kf.x));
-    kf.y = fmaxf(0.0f, fminf(100.0f, kf.y));
+    kf.x = fmaxf(0.0f, fminf(400.0f, kf.x));
+    kf.y = fmaxf(0.0f, fminf(400.0f, kf.y));
 
     Serial.print("raw=(");
     Serial.print(tx, 1);

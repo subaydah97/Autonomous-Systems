@@ -3,11 +3,11 @@
 #include <SPI.h>
 
 // change based on where pico is and how big field is 
-const float PICO_X = 50.0f; 
-const float PICO_Y = 50.0f; 
+const float PICO_X = 200.0f; 
+const float PICO_Y = 200.0f; 
 
-const float BX[3] = {0.0f, 100.0f, 50.0f};   
-const float BY[3] = {0.0f, 0.0f, 100.0f};  
+const float BX[3] = {0.0f, 400.0f, 200.0f};   
+const float BY[3] = {0.0f, 0.0f, 400.0f};  
 const float n = 2.5f;                       
 
 #define BEACON_PREFIX "ForestBeacon"
