@@ -23,13 +23,16 @@ bool waitingForCoordinates = false;
 bool coordinatesSent = false;
 unsigned long waitStartTime = 0;
 unsigned long lastTelemetryMs = 0;
-const int TELEMETRY_INTERVAL_MS = 1000 / 2; // ~41ms
+const int TELEMETRY_INTERVAL_MS = 1000 / 2; 
 bool firstTelemetryPrinted = false;
 bool telemetryEnabled = false;
 
 float latestX = -400.0f;
 float latestY = 0.0f;
 float latestZ = 0.0f;
+float obstacleX = 0.0f;
+float obstacleY = 0.0f; // stays 0, robot only moves along x
+
  
 // beacon coordinates in the environment, used for trilateration
 const float BX[3] = {0.0f, 100.0f, 50.0f};
@@ -374,6 +377,7 @@ constexpr uint32_t ENCODER_CONTROL_INTERVAL_MS = 500;
 constexpr uint32_t ENCODER_TIMEOUT_MS = 2500;
 constexpr uint32_t MIN_ENCODER_INTERVAL_US = 3000;
 constexpr float WHEEL_TICK_TO_RAD = (2.0f * PI) / 10.0f;
+constexpr float TICK_TO_CM = 0.72f * PI; // 1 tick ≈ 2.2619 cm (0.442 tick = 1 cm)
  
  
  
@@ -867,6 +871,10 @@ void handleObstacleAvoidance()
             Serial.println("Obstacle detected.");
             setMotionMode(MotionMode::STOPPED);
 
+            float avgForwardTicks = (forwardLeftTicks + forwardRightTicks) / 2.0f;
+            obstacleX = avgForwardTicks * TICK_TO_CM;
+            obstacleY = 0.0f;
+
             waitingForCoordinates = true;
             coordinatesSent = false;
             waitStartTime = millis();
@@ -948,13 +956,13 @@ void loop()
     // =====================================================
     if (waitingForCoordinates && !coordinatesSent)
     {
-        if (millis() - waitStartTime >= 10000)
+        if (millis() - waitStartTime >= 5000)
         {
             JsonDocument doc;
 
             JsonObject position = doc["position"].to<JsonObject>();
-            position["x"] = latestX / 100.0f;
-            position["y"] = latestY / 100.0f;
+            position["x"] = obstacleX / 100.0f;
+            position["y"] = obstacleY / 100.0f;
             position["z"] = latestZ / 100.0f;
 
             char buffer[128];
@@ -985,8 +993,8 @@ void loop()
         JsonDocument botDoc;
 
         JsonObject pos = botDoc["position"].to<JsonObject>();
-        pos["x"] = latestX / 100.0f;
-        pos["y"] = latestY / 100.0f;
+        pos["x"] = obstacleX / 100.0f;
+        pos["y"] = obstacleY / 100.0f;
         pos["z"] = latestZ / 100.0f;
 
         JsonObject wheels = botDoc["wheels"].to<JsonObject>();
