@@ -29,14 +29,16 @@ const int TELEMETRY_INTERVAL_MS =
 bool firstTelemetryPrinted = false;
 bool telemetryEnabled = false;
 
-float latestXcm = -400.0f;
-float latestYcm = 0.0f;
+float obstacleX = -400.0f;
+float obstacleY = 0.0f;
 float latestZcm = 0.0f;
 
 // Obstacle target received from bot 1
 float targetXcm = 0.0f;
 float targetYcm = 0.0f;
 float targetZcm = 0.0f;
+float obstacleX = 0.0f;
+float obstacleY = 0.0f;
 
 bool newObstacleTargetReceived = false;
 
@@ -485,8 +487,8 @@ void readEncoderTicks(uint32_t &leftTicks, uint32_t &rightTicks)
     interrupts();
 }
 
-constexpr float WHEEL_TICK_TO_RAD =
-    (2.0f * PI) / 10.0f;
+constexpr float WHEEL_TICK_TO_RAD = (2.0f * PI) / 10.0f;
+constexpr float TICK_TO_CM = 0.72f * PI; // 1 tick ≈ 2.2619 cm (0.442 tick = 1 cm)
 
 void getWheelRadians(
     float &leftRadians,
@@ -883,7 +885,11 @@ void handleObstacleAvoidance()
  
             Serial.println("Obstacle detected. Pushing...");
         }
- 
+        
+            float avgForwardTicks = (forwardLeftTicks + forwardRightTicks) / 2.0f;
+            obstacleX = avgForwardTicks * TICK_TO_CM;
+            obstacleY = 0.0f;
+
         // After 3 seconds of pushing, go home
         if (pushingObstacle &&
             (millis() - pushStartTime >= 10000))
@@ -1059,8 +1065,8 @@ void loop()
                 .to<JsonObject>();
 
         // Internal centimetres to Webots metres
-        pos["x"] = latestXcm / 100.0f;
-        pos["y"] = latestYcm / 100.0f;
+        pos["x"] = obstacleX / 100.0f;
+        pos["y"] = obstacleY / 100.0f;
         pos["z"] = latestZcm / 100.0f;
 
         JsonObject wheels =
