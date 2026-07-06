@@ -34,7 +34,8 @@ struct auxiliary_command
     void (*func)(char *, char **, uint8_t &);
 };
 auxiliary_command auxiliary_commands[] = {
-    {"OVERRIDE", &override}};
+    {"OVERRIDE", &override},
+    {"ESTOP", &estop}}
 
 // Lambda tools
 
@@ -144,6 +145,11 @@ void override(char *command_string, char *tokens[16], uint8_t &tp)
             break;
         }
     }
+}
+
+void estop(char *command_string = command_string, char *tokens[16] = tokens, uint8_t &tp = tp)
+{
+    emergency_flag = true;
 }
 
 // Routines
