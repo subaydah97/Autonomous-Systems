@@ -15,8 +15,8 @@ extern uint32_t forwardRightTicks;
 
 // Module variables
 
-#define command_string_length 64
-#define command_tokens 16
+#define command_string_length 256
+#define command_tokens 64
 
 // Input variables
 const char *delim = " ";
@@ -33,14 +33,20 @@ struct auxiliary_command
     char *name;
     void (*func)(char *, char **, uint8_t &);
 };
+
+// Function declarations needed to build auxiliary commands structs
+void override(char *command_string = command_string, char *tokens[command_tokens] = tokens, uint8_t &tp = tp);
+void estop(char *command_string = command_string, char *tokens[command_tokens] = tokens, uint8_t &tp = tp);
+
 auxiliary_command auxiliary_commands[] = {
     {"OVERRIDE", &override},
-    {"ESTOP", &estop}}
+    {"ESTOP", &estop}};
 
-// Lambda tools
-
-// Lambda function used to read a float from *tokens[]
-auto read_float = [&](bool doIncrement = true)
+//--------------------
+// Utils
+//--------------------
+//  function used to read a float from *tokens[]
+auto read_float(bool doIncrement = true)
 {
     float returnVal = strtof(tokens[tp], &tokens[tp + 1]);
 
@@ -50,7 +56,7 @@ auto read_float = [&](bool doIncrement = true)
     return returnVal;
 };
 
-auto read_int = [&](bool doIncrement = true)
+auto read_int(bool doIncrement = true)
 {
     float returnVal = strtoimax(tokens[tp++], &tokens[tp], 10);
 
@@ -60,8 +66,11 @@ auto read_int = [&](bool doIncrement = true)
     return returnVal;
 };
 
+// -------------------------
 // Functions
-void tokenize_input(char *command_string = command_string, char *tokens[16] = tokens, uint8_t &tp = tp)
+// -------------------------
+
+void tokenize_input(char *command_string = command_string, char *tokens[command_tokens] = tokens, uint8_t &tp = tp)
 {
     // Reset token pointer
     tp = 0;
@@ -147,7 +156,7 @@ void override(char *command_string, char *tokens[16], uint8_t &tp)
     }
 }
 
-void estop(char *command_string = command_string, char *tokens[16] = tokens, uint8_t &tp = tp)
+void estop(char *command_string, char *tokens[16], uint8_t &tp)
 {
     emergency_flag = true;
 }
@@ -155,9 +164,12 @@ void estop(char *command_string = command_string, char *tokens[16] = tokens, uin
 // Routines
 
 // Outline, must be finished
-void mqtt_message_received(char *command_string = command_string, char *tokens[16] = tokens, uint8_t &tp = tp)
+void mqtt_message_received(char *command_string = command_string, char *tokens[command_tokens] = tokens, uint8_t &tp = tp)
 {
     // Tokennize input
+    tokenize_input();
+
+    // Potentialy to loop until a token reads NULL
 
     for (auxiliary_command command : auxiliary_commands)
     {
