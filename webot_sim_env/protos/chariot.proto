@@ -1,0 +1,197 @@
+#VRML_SIM R2025a utf8
+
+  PROTO chariot [
+    field SFVec3f translation 0 0 0
+    field SFRotation rotation 0 0 1 0
+ 
+    field SFString name "defaultName"
+    field SFString controller "./topath"
+    
+    field SFFloat turret_position_horizontal 0
+    field SFFloat turret_position_vertical 0
+    field SFFloat wheel_position_left 0
+    field SFFloat wheel_position_right 0
+
+
+  ]
+  
+  {
+ Robot {
+  translation IS translation
+  rotation IS rotation
+  children [
+    Pose {
+      translation 0.11 0 -0.0475
+      children [
+        BallJoint {
+          jointParameters BallJointParameters {
+          }
+          jointParameters2 JointParameters {
+          }
+          jointParameters3 JointParameters {
+          }
+          endPoint Solid {
+            children [
+              Shape {
+                appearance PBRAppearance {
+                }
+                geometry Sphere {
+                  radius 0.025
+                }
+              }
+            ]
+            boundingObject Sphere {
+              radius 0.025
+            }
+            physics Physics {
+            }
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.09 0 0.04
+      children [
+        Pose {
+          translation 0 0 0.07
+          children [
+            Hinge2Joint {
+              jointParameters HingeJointParameters {
+                #horizontal
+                axis 0 0 1 
+                position IS turret_position_horizontal
+              }
+              jointParameters2 JointParameters {
+                #vertical
+                axis 0 1 0
+                position IS turret_position_vertical
+              }
+              device [
+             
+              ]
+              device2 [
+              
+              ]
+              endPoint DistanceSensor {
+                rotation 0 0 1 3.14159
+                children [
+                  Pose {
+                    translation 0.05 0 -1.8366e-07
+                    rotation 0 1 0 1.5708
+                    children [
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 1 0 0
+                          roughness 0.5
+                          metalness 0.4
+                        }
+                        geometry Cone {
+                          bottomRadius 0.025
+                          height 0.1
+                          subdivision 4
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.2 0.2 0.8
+            roughness 0.5
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.05 0.1
+          }
+        }
+      ]
+    }
+    Receiver {
+    }
+    Pose {
+      translation -0.07 0 0
+      children [
+        Pose {
+          translation 0 -0.07 0
+          children [
+            HingeJoint {
+              # left wheel
+              jointParameters HingeJointParameters {
+                axis 0 1 0
+                position IS wheel_position_left
+              }
+              device [
+               
+              ]
+              endPoint Slot {
+                endPoint VehicleWheel {
+                  name "vehicle wheel(2)"
+                  thickness 0.03
+                  tireRadius 0.07
+                  rimRadius 0.06
+                  rimBeamWidth 0.01
+                  centralInnerRadius 0.009
+                  centralOuterRadius 0.013
+                  rimBeamThickness 0.02
+                  rimBeamOffset 0.003
+                }
+              }
+            }
+          ]
+        }
+        Pose {
+          translation 0 0.07 0
+          children [
+            HingeJoint {
+              # wheel right
+              jointParameters HingeJointParameters {
+                axis 0 1 0
+                position IS wheel_position_right
+              }
+              device [
+             
+              ]
+              endPoint Slot {
+                endPoint VehicleWheel {
+                  name "vehicle wheel(1)"
+                  thickness 0.03
+                  tireRadius 0.07
+                  rimRadius 0.06
+                  rimBeamWidth 0.01
+                  centralInnerRadius 0.009
+                  centralOuterRadius 0.013
+                  rimBeamThickness 0.02
+                  rimBeamOffset 0.003
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.2 0.8
+        roughness 0.5
+        metalness 0
+      }
+      geometry Box {
+        size 0.3 0.1 0.03
+      }
+    }
+    Compass {
+    }
+  ]
+  name IS name
+  boundingObject Box {
+    size 0.3 0.1 0.03
+  }
+
+  controller IS controller
+  supervisor TRUE
+}
+  }
