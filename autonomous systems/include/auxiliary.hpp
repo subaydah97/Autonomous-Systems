@@ -167,7 +167,7 @@ void estop(char *command_string, char *tokens[16], uint8_t &tp)
 void mqtt_message_received(char *command_string = command_string, char *tokens[command_tokens] = tokens, uint8_t &tp = tp)
 {
     // Tokennize input
-    tokenize_input();
+    tokenize_input(command_string, tokens, tp);
 
     // Potentialy to loop until a token reads NULL
 
