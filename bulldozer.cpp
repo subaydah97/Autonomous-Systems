@@ -29,7 +29,7 @@ const int TELEMETRY_INTERVAL_MS =
 bool firstTelemetryPrinted = false;
 bool telemetryEnabled = false;
 
-float obstacleX = -400.0f;
+float obstacleX = 0.0f;
 float obstacleY = 0.0f;
 float latestZcm = 0.0f;
 
@@ -37,8 +37,7 @@ float latestZcm = 0.0f;
 float targetXcm = 0.0f;
 float targetYcm = 0.0f;
 float targetZcm = 0.0f;
-float obstacleX = 0.0f;
-float obstacleY = 0.0f;
+
 
 bool newObstacleTargetReceived = false;
 
