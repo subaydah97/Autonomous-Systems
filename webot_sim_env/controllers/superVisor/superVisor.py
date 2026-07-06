@@ -5,6 +5,7 @@
 from controller import Supervisor
 import paho.mqtt.client as mqtt
 import json
+import traceback
 
 # global variables
 
@@ -23,6 +24,16 @@ def on_connect(client, userdata, flags, reason_code, properties):
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     #print(msg.topic+" "+str(msg.payload))
+    # Check input
+    decodedPayload = None
+    try:
+        decodedPayload = json.loads(msg.payload)
+    except Exception as e:
+        print(PRFX,e)
+        traceback.print_tb(e.__traceback__)
+        print({PRFX,"Ignoring faulty formatted message"})
+        return
+
     botID = extract_botID(msg)
     
     if (int(botID) > 0) & robots.count(botID) < 1:
@@ -40,12 +51,15 @@ def extract_botID(msg):
     # print(f"botID:({botID})")
     # print(f"delim{delim})
     return botID
+
 def extract_properties(msg):
     #Extract properties from JSON, append with \n
     properties = []
     #properties = ["translation -0.2 0.2 0 \n", "rotation 0 0 1 2 \n"]
     
     # JSON parsing here
+    decodedPayload = None
+
     decodedPayload = json.loads(msg.payload)
     #print(json.dumps(decodedPayload))
     
@@ -75,7 +89,10 @@ def add_chariot(msg):
     print(PRFX,f"Supervisor adding new robot to payload")
     botID = extract_botID(msg)
     
-    properties = extract_properties(msg)
+    try:
+        properties = extract_properties(msg)
+    except ArithmeticError:
+        return
     properties.append(f'controller "{controllerPath}" \n')
     properties.append(f'name "{botID}"')
     

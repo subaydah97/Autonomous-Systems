@@ -1,22 +1,27 @@
-#VRML_SIM R2023b utf8
+#VRML_SIM R2025a utf8
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
 IMPORTABLE EXTERNPROTO "../protos/chariot.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Forest.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.26713769533091114 -0.14833129651333643 -0.9521739747587948 4.114277093840799
-  position 1.2416884753166493 -1.92719218818028 1.5638692078691658
+  orientation 0.24613810597033403 -0.20392342964965068 -0.9475395863124983 4.472671792759575
+  position 0.4258251991101135 -4.797043956365238 3.203786724694414
 }
 TexturedBackground {
 }
 TexturedBackgroundLight {
 }
 RectangleArena {
-  floorSize 2 2
+  floorSize 100 1
+  floorAppearance Parquetry {
+    type "dark strip"
+  }
   wallHeight 0.001
 }
 Robot {
@@ -50,4 +55,15 @@ Robot {
   name "SupervisorCreateObstacles"
   controller "simulateObstacles"
   supervisor TRUE
+}
+Forest {
+  translation 0 10.5479 0
+  shape [
+    50 0
+    50 10
+    -50 10
+    -50 0
+  ]
+  type "spruce"
+  maxRadius 2
 }

@@ -2,7 +2,7 @@
 
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, Motor, DistanceSensor
-from controller import Supervisor
+from controller import Supervisor, Node
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 import json
@@ -44,16 +44,40 @@ def on_message(client, userdata, msg):
 
             for obstacle in obstacles:
                 print(PRFX,obstacle)
-                create_obstacle(obstacle)
-                
+                try:
+                    create_obstacle(obstacle)
+                except AttributeError as e:
+                    remove_obstacle(obstacle["id"])
+                    print(PRFX,e)
+                except Exception as e:
+                    print(PRFX,e)
+                     
+
         case "OR/NEW":
-            obstacle = json.loads(msg.payload)
-            formattedObstacle = {"id":get_new_id(),"payload":obstacle}
-            create_obstacle(formattedObstacle)
+            try:
+                obstacle = json.loads(msg.payload)
+            except Exception as e:
+                print(PRFX,"JSON faulty formatting detected, ignoring message.")
+                return
+            try:
+                formattedObstacle = {"id":get_new_id(),"payload":obstacle}
+                create_obstacle(formattedObstacle)
+            except Exception as exception:
+                print(PRFX,msg.topic,exception)
+                remove_obstacle(obstacle["id"])                 
+        case "OR/MOV":
+            try:
+                obstacle = json.loads(msg.payload)
+                update_obstacle(obstacle)
+            except json.decoder.JSONDecodeError as exception:
+                print(PRFX,exception)
+            except Exception as exception:
+                print(PRFX,exception)                   
         case "OR/REM":
             remove_obstacle(int(msg.payload))
         case _:
             print(PRFX,"Topic not accounted for:",msg.topic+" "+str(msg.payload))
+
 def get_new_id(obstacleCache=obstacleCache):
     newID = -1
     # If the obstacle has no id yet, create it. This should allign with the id an obstacle registry would assign to this obstacle.
@@ -65,16 +89,41 @@ def get_new_id(obstacleCache=obstacleCache):
 
 def create_obstacle(obstacle):
     
-    # Create base object
-    obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Pose { translation 0 0 0 children [ Shape {geometry Sphere {radius 0.1}} ] }" 
-    selfChildren.importMFNodeFromString(-1, obstacleString)
+    if isinstance(obstacle["payload"],str): print(PRFX,"Atribute error caught. Object not created"); return
 
-    # Alter base object according to keys in the obstacle data
-    node = robot.getFromDef(f"obstacle_{obstacle["id"]}")
+    # Create base object
+    obstacleString = f"DEF obstacle_{obstacle["id"]} " + " Solid { translation 0 0 0 boundingObject Box {size 0.1 0.1 0.1} children [ Shape {geometry Box {size 0.1 0.1 0.1} appearance PBRAppearance {baseColor 1 0 0 metalness 0} } ] }" 
+    selfChildren.importMFNodeFromString(-1, obstacleString)
     
+    node = robot.getFromDef(f"obstacle_{obstacle["id"]}")
     obstacleCache.append({"id":obstacle["id"],"node":node})
 
+
+    # Alter base obstacle according to keys in obstacle wrapper
+    update_obstacle(obstacle)
+
+def update_obstacle(obstacle):
+    #Get webot node of obstacle
+    #print(PRFX,"Updating:",obstacle)
+    node = None
+    
+    for obstacleLookup in obstacleCache:
+        if obstacleLookup["id"] == obstacle["id"]:
+            node = obstacleLookup["node"]
+            #print(PRFX,"Found:",obstacleLookup)
+            break
+
+    if not isinstance(node,Node):
+       print(PRFX,"Updated obstacle doesn't exist:",obstacle["id"])
+       print(PRFX,"Creating instead.")
+       create_obstacle(obstacle)
+       print(PRFX,"Creation complete, terminating update routine")
+       return
+
+    # Alter base object according to keys in the obstacle data
+    if len(obstacle["payload"].keys()) < 1: raise Exception("Broken payload")
     for key in obstacle["payload"].keys():
+        #print(PRFX,"Updating field:"+key)
         field = obstacle["payload"][key]
         match key:
             case "position":
@@ -85,7 +134,7 @@ def create_obstacle(obstacle):
                 # Used to remove confusing prints from the cmd
                 1 == 1
             case _:
-                print(PRFX,"Field not accounted for:",key)
+                print(PRFX,"Creating obstacle:",obstacle["id"],"\tField not accounted for:",key)    
 
 def remove_obstacle(obstacleID):
                 try:
@@ -93,10 +142,8 @@ def remove_obstacle(obstacleID):
                         if obstacle["id"] == obstacleID: 
                             print(PRFX,f'removing obstacle:"{obstacle}"')
                             obstacle["node"].remove()
-                   
-
                 except Exception as e:
-                        print("Obstacle removal error:"+'"'+msg.payload.decode("utf-8")+'"',e)
+                        print(PRFX,"Obstacle removal error:"+'"'+msg.payload.decode("utf-8")+'"',e)
 
 def remove_all_obstacles():
     global obstacleCache
