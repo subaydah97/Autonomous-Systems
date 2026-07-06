@@ -23,7 +23,7 @@ bool waitingForCoordinates = false;
 bool coordinatesSent = false;
 unsigned long waitStartTime = 0;
 unsigned long lastTelemetryMs = 0;
-const int TELEMETRY_INTERVAL_MS = 1000 / 24; // ~41ms
+const int TELEMETRY_INTERVAL_MS = 1000 / 2; // ~41ms
 bool firstTelemetryPrinted = false;
 bool telemetryEnabled = false;
 

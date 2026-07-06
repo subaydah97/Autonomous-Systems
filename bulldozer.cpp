@@ -24,7 +24,7 @@ PubSubClient mqttClient(wifiClient);
 unsigned long lastTelemetryMs = 0;
 
 const int TELEMETRY_INTERVAL_MS =
-    1000 / 24; // Approximately 41 ms
+    1000 / 2; // Approximately 41 ms
 
 bool firstTelemetryPrinted = false;
 bool telemetryEnabled = false;
