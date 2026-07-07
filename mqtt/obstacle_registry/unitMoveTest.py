@@ -46,9 +46,9 @@ while 1 == 1:
 
     unit["rotation"]["radians_from_north"] += 1/update_freq
 
-    unit["position"]["z"] = math.sin(1/update_freq * time_step)/4 + height_offset
-    unit["position"]["y"] = math.cos(1/update_freq * time_step)/4 
-    unit["position"]["x"] = math.tan(2/update_freq * time_step)/4 
+    unit["position"]["z"] = math.sin(1/update_freq * time_step) + height_offset
+    unit["position"]["y"] = math.tan(1/update_freq * time_step)/4 
+    unit["position"]["x"] = math.cos(2/update_freq * time_step)*5 + 5
 
     time.sleep(1/update_freq)
     
