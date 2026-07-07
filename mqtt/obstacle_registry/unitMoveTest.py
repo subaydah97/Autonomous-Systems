@@ -8,41 +8,47 @@ HOSTNAME = "localhost"
 
 #publish.single("OR/COMMANDS", f"CLEAR", hostname=HOSTNAME)
 
-obstacle = {"id":101}
-obstacle["payload"] = {"position":{
-                            "x":0,
-                            "y":0,
-                            "z":0.5
-                                   },
-                        "rotation":{
-                            "x":0,
-                            "y":0,
-                            "z":1,
-                            "radians":0
-                        }
-                                   }
+unit = {"id":101}
+unit = {  
+                        "position": 
+                        {
+                            "x": 0.2,
+                            "y": 0.3
+                        },
+                        "rotation": 
+                        {
+                        "radians_from_north": 0.5
+                        },
+                        "wheels": 
+                        {
+                        "radian_position_wheel_left": 1.0,
+                        "radian_position_wheel_right": 2.0
+                        },
+                        "laser_turret": 
+                        {
+                        "radian_position_horizontal": 1.0,
+                        "radian_position_vertical": 2.0
+                        } 
+                       }
 
-publish.single("BOT/767", f"{json.dumps(obstacle)}", hostname=HOSTNAME)
+publish.single("BOT/767", f"{json.dumps(unit)}", hostname=HOSTNAME)
 
 update_freq = 12
 
-time_step = 0
+time_step = 999
 
 height_offset = 0.4
 
 while 1 == 1:
     time_step += 1
 
-    publish.single("OR/MOV", f"{json.dumps(obstacle)}", hostname=HOSTNAME)
+    publish.single("bot/767", f"{json.dumps(unit)}", hostname=HOSTNAME)
 
-    obstacle["payload"]["rotation"]["radians"] += 1/update_freq
-    obstacle["payload"]["rotation"]["x"] += 1/update_freq
-    obstacle["payload"]["rotation"]["z"] -= 2/update_freq
+    unit["rotation"]["radians_from_north"] += 1/update_freq
 
-    obstacle["payload"]["position"]["z"] = math.sin(1/update_freq * time_step)/4 + height_offset
-    obstacle["payload"]["position"]["y"] = math.cos(1/update_freq * time_step)/4 
-    obstacle["payload"]["position"]["x"] = math.tan(1/4/update_freq * time_step)/4 
+    unit["position"]["z"] = math.sin(1/update_freq * time_step)/4 + height_offset
+    unit["position"]["y"] = math.cos(1/update_freq * time_step)/4 
+    unit["position"]["x"] = math.tan(2/update_freq * time_step)/4 
 
     time.sleep(1/update_freq)
-    pass
-publish.single("OR/REM", f"{obstacle["id"]}", hostname=HOSTNAME)
+    

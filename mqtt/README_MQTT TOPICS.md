@@ -114,7 +114,7 @@ Instrucst the OR to publish it's loaded obstacles to "OR/COMPLETE_REGISTRY"
 
 # Swarm unit topics
 replace \<id> with the bots id.
-## BOT/\<id>
+## bot/\<id>
 Telemetry data is published here, in the following format.
 
 Telemetry data handling must allow for the independent handling of each field. For example so that a telemetry message only updates the "rotation" 
@@ -139,7 +139,7 @@ Telemetry data handling must allow for the independent handling of each field. F
 }
 ```
 
-## BOT/\<id>/COMMANDS
+## bot/\<id>/COMMANDS
 ```
 <command_name> <arguments, seperated by spaces>
 ```
