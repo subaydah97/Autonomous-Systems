@@ -113,7 +113,7 @@ Instrucst the OR to publish it's loaded obstacles to "OR/COMPLETE_REGISTRY"
 
 
 # Swarm unit topics
-replace <id> with the bots id.
+replace \<id> with the bots id.
 ## BOT/\<id>
 Telemetry data is published here, in the following format.
 
