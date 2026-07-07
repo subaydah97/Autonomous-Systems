@@ -2,6 +2,7 @@
 # Obstacle registry
 ### Obstacle payload
 When handling obstacle payload, no guarrantee can be expected as to what fields are and aren't present in the payload.
+
 Implemented fields:
 - Position 
 - Rotation
@@ -102,9 +103,11 @@ Receives the OR in the format outlined below:
 ```<command_name>```
 ### Clear
 Name:"CLEAR"
+
 Clears the obstacles loaded into the OR.
 ### Spit
 Name:"SPIT"
+
 Instrucst the OR to publish it's loaded obstacles to "OR/COMPLETE_REGISTRY"
 
 
@@ -113,7 +116,9 @@ Instrucst the OR to publish it's loaded obstacles to "OR/COMPLETE_REGISTRY"
 replace <id> with the bots id.
 ## BOT/<id>
 Telemetry data is published here, in the following format.
+
 Telemetry data handling must allow for the independent handling of each field. For example so that a telemetry message only updates the "rotation" 
+
 ```json
 {
   "position": {
@@ -140,9 +145,12 @@ Telemetry data handling must allow for the independent handling of each field. F
 ```
 ### override
 Name:"OVERRIDE"
+
 Arguments: ```OVERRIDE <identifier> <new value> <identifier> <new value>...```
+
 Takes any number of arguments. 
 
+```
 Identifier  new value   description    
 'X'         float       Override the latestX of the robots position.
 'Y'         float       Override the latestY..
@@ -151,6 +159,7 @@ Identifier  new value   description
 'T'         int         Override the forward ticks the robot has moved on both motors.
 'l'         int         Override the forward ticks the robot has moved on the left motor.
 'r'         int         Override the forward ticks the robot has moved on the right motor.
+```
 
 ### Estop
 Name:"ESTOP
