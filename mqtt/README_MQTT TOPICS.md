@@ -46,8 +46,9 @@ Publish an obstacle wrapper with an updated payload here to alter an obstacle.
 ```<obstacle id>```
 Remove the obstacle with that id.
 
-## OR/COMPLETE_REGISTRY
+## OR/COMPLETE\_REGISTRY
 Receives the OR in the format outlined below:
+
 ```json
 [
   {
@@ -96,6 +97,7 @@ Receives the OR in the format outlined below:
   }
 ]
 ```
+
 ## OR/COMMANDS
 ```<command_name>```
 ### Clear
