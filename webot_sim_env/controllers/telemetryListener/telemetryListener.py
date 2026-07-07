@@ -29,7 +29,7 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(PRFX,e)
         traceback.print_tb(e.__traceback__)
-        print({PRFX,"Ignoring faulty formatted message"})
+        print({PRFX,"Ignoring faulty formatted message:",msg.payload})
         return
     #print(json.dumps(decodedPayload))
     

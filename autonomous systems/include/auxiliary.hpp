@@ -58,6 +58,7 @@ auto read_float(bool doIncrement = true)
 
 auto read_int(bool doIncrement = true)
 {
+
     float returnVal = strtoimax(tokens[tp++], &tokens[tp], 10);
 
     if (doIncrement)
@@ -176,8 +177,8 @@ void handle_command_message(const char *string)
 
     for (auxiliary_command command : auxiliary_commands)
     {
-        if (strcasecmp(command.name, tokens[0]) == 0)
-        {
+        if (strcmp(command.name, tokens[0]) == 0)
+        { 
             // Execute commands function
             command.func(command_string, tokens, tp);
         }
