@@ -1,18 +1,11 @@
-#include <Arduino.h>    // Arduino framework
-#include <BTstackLib.h> // BTstack Bluetooth stack (requires a Pico W board for the radio)
-#include <SPI.h>        // required by BTstackLib
-#include <Wire.h>       // I2C for the ToF sensor
-#include <VL53L1X.h>    // ToF distance sensor
-#include <Servo.h>      // motor control via PWM "servo" pulses
+#include <Arduino.h> // Arduino framework
+#include <Wire.h>    // I2C for the ToF sensor
+#include <VL53L1X.h> // ToF distance sensor
+#include <Servo.h>   // motor control via PWM "servo" pulses
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-// Scripts
-#include "auxiliary.hpp"
-
-#define BEACON_PREFIX "ForestBeacon"                  // prefix used to filter beacon names in the scanner
-#define BEACON_PREFIX_LEN (sizeof(BEACON_PREFIX) - 1) // length excluding the null terminator
 #define _telemetry_target "bot/1"
 
 const char *ssid = "mn-92937";
@@ -26,37 +19,15 @@ bool waitingForCoordinates = false;
 bool coordinatesSent = false;
 unsigned long waitStartTime = 0;
 unsigned long lastTelemetryMs = 0;
-const int TELEMETRY_INTERVAL_MS = 1000 / 2; // Should not subceed 1000 / 6
+const int TELEMETRY_INTERVAL_MS = 1000 / 2;
 bool firstTelemetryPrinted = false;
 bool telemetryEnabled = false;
 
-float latestX = -400.0f;
-float latestY = 0.0f;
 float latestZ = 0.0f;
-
-/* Latest rotation, should be set to PI
-When communicating rotation, we're asuming an xyz axis of 0 0 1, where z points away from gravity*/
-float latestRot = 3.14;
-
 float obstacleX = 0.0f;
 float obstacleY = 0.0f; // stays 0, robot only moves along x
-
-bool emergency_flag = false;
-
-// =========================
-// Localization
-// =========================
-
-// beacon coordinates in the environment, used for trilateration
-const float BX[3] = {0.0f, 100.0f, 50.0f};
-const float BY[3] = {0.0f, 0.0f, 100.0f};
-
-// calibrated 1-unit baseline transmission powers (from tx_power_calibration.cpp)
-const float TX_POWER[3] = {-15.32f, -28.98f, -18.87f};
-const float ALPHA = 0.35f; // smoothing factor for the RSSI exponential moving average
-const float n = 2.5f;      // path loss exponent for distance calculation
-float rssi_avg[3] = {-100.0f, -100.0f, -100.0f};
-bool seen[3] = {false, false, false};
+float signedPositionTicks = 0.0f; 
+float lastAvgTicksSeen = 0.0f; 
 
 void connectWiFi()
 {
@@ -98,258 +69,6 @@ void connectMQTT()
     }
 }
 
-struct Kalman2D
-{
-    float x, y, vx, vy; // state: position (x,y) and velocity (vx,vy)
-    float P[4][4];      // covariance matrix
-
-    float Q_pos; // position process noise
-    float Q_vel; // velocity process noise
-    float R;     // measurement noise
-
-    bool initialised;
-    unsigned long last_ms;
-
-    void init(float start_x, float start_y)
-    {
-        x = start_x;
-        y = start_y;
-        vx = 0;
-        vy = 0;
-
-        for (int i = 0; i < 4; i++)
-            for (int j = 0; j < 4; j++)
-                P[i][j] = (i == j) ? 500.0f : 0.0f;
-
-        Q_pos = 0.1f;
-        Q_vel = 0.3f;
-        R = 30.0f;
-
-        initialised = true;
-        last_ms = millis();
-    }
-
-    void update(float mx, float my)
-    {
-        if (!initialised)
-        {
-            init(mx, my);
-            return;
-        }
-
-        float dt = (millis() - last_ms) / 1000.0f;
-        last_ms = millis();
-        if (dt <= 0 || dt > 2.0f)
-            dt = 0.1f;
-
-        // state prediction
-        float px = x + vx * dt;
-        float py = y + vy * dt;
-        float pvx = vx;
-        float pvy = vy;
-
-        // propagate covariance
-        float PP[4][4];
-        for (int i = 0; i < 4; i++)
-            for (int j = 0; j < 4; j++)
-                PP[i][j] = P[i][j];
-
-        for (int j = 0; j < 4; j++)
-        {
-            PP[0][j] = P[0][j] + dt * P[2][j];
-            PP[1][j] = P[1][j] + dt * P[3][j];
-        }
-        for (int i = 0; i < 4; i++)
-        {
-            P[i][0] = PP[i][0] + dt * PP[i][2];
-            P[i][1] = PP[i][1] + dt * PP[i][3];
-            P[i][2] = PP[i][2];
-            P[i][3] = PP[i][3];
-        }
-        float dt2 = dt * dt;
-        P[0][0] += Q_pos * dt2;
-        P[1][1] += Q_pos * dt2;
-        P[2][2] += Q_vel * dt2;
-        P[3][3] += Q_vel * dt2;
-
-        // innovation
-        float innov_x = mx - px;
-        float innov_y = my - py;
-
-        float S00 = P[0][0] + R;
-        float S11 = P[1][1] + R;
-        float S01 = P[0][1];
-
-        float det = S00 * S11 - S01 * S01;
-        if (fabsf(det) < 1e-6f)
-        {
-            x = px;
-            y = py;
-            vx = pvx;
-            vy = pvy;
-            return;
-        }
-        float Si00 = S11 / det;
-        float Si11 = S00 / det;
-        float Si01 = -S01 / det;
-
-        // Kalman gain
-        float K[4][2];
-        for (int i = 0; i < 4; i++)
-        {
-            K[i][0] = P[i][0] * Si00 + P[i][1] * Si01;
-            K[i][1] = P[i][0] * Si01 + P[i][1] * Si11;
-        }
-
-        // updated state
-        x = px + K[0][0] * innov_x + K[0][1] * innov_y;
-        y = py + K[1][0] * innov_x + K[1][1] * innov_y;
-        vx = pvx + K[2][0] * innov_x + K[2][1] * innov_y;
-        vy = pvy + K[3][0] * innov_x + K[3][1] * innov_y;
-
-        // updated covariance
-        float newP[4][4];
-        for (int i = 0; i < 4; i++)
-        {
-            newP[i][0] = P[i][0] - K[i][0] * P[0][0] - K[i][1] * P[1][0];
-            newP[i][1] = P[i][1] - K[i][0] * P[0][1] - K[i][1] * P[1][1];
-            newP[i][2] = P[i][2] - K[i][0] * P[0][2] - K[i][1] * P[1][2];
-            newP[i][3] = P[i][3] - K[i][0] * P[0][3] - K[i][1] * P[1][3];
-        }
-        for (int i = 0; i < 4; i++)
-            for (int j = 0; j < 4; j++)
-                P[i][j] = newP[i][j];
-    }
-} kf;
-
-static int beacon_index(const char *name)
-{
-    if (strcmp(name, "ForestBeaconOne") == 0)
-        return 0;
-    if (strcmp(name, "ForestBeaconTwo") == 0)
-        return 1;
-    if (strcmp(name, "ForestBeaconThree") == 0)
-        return 2;
-    return -1;
-}
-
-static float rssi_to_distance(int idx, float rssi)
-{
-    return powf(10.0f, (TX_POWER[idx] - rssi) / (10.0f * n));
-}
-
-static bool trilaterate(float *out_x, float *out_y)
-{
-    float d1 = rssi_to_distance(0, rssi_avg[0]);
-    float d2 = rssi_to_distance(1, rssi_avg[1]);
-    float d3 = rssi_to_distance(2, rssi_avg[2]);
-
-    float x1 = BX[0], y1 = BY[0], x2 = BX[1], y2 = BY[1], x3 = BX[2], y3 = BY[2];
-
-    float A = 2 * (x2 - x1);
-    float B = 2 * (y2 - y1);
-    float C = d1 * d1 - d2 * d2 - x1 * x1 + x2 * x2 - y1 * y1 + y2 * y2;
-    float D = 2 * (x3 - x1);
-    float E = 2 * (y3 - y1);
-    float F = d2 * d2 - d3 * d3 - x1 * x1 + x3 * x3 - y1 * y1 + y3 * y3;
-
-    float det = A * E - B * D;
-    if (fabsf(det) < 0.001f)
-        return false;
-
-    *out_x = (C * E - F * B) / det;
-    *out_y = (A * F - D * C) / det;
-    return true;
-}
-
-static bool parse_name(const uint8_t *data, uint8_t max_len, char *out, uint8_t out_size)
-{
-    int i = 0;
-    while (i < max_len)
-    {
-        uint8_t chunk_len = data[i];
-        if (chunk_len == 0 || i + chunk_len > max_len)
-            break;
-        uint8_t chunk_type = data[i + 1];
-        if (chunk_type == 0x09 || chunk_type == 0x08)
-        {
-            uint8_t name_len = chunk_len - 1;
-            if (name_len >= out_size)
-                name_len = out_size - 1;
-            memcpy(out, &data[i + 2], name_len);
-            out[name_len] = '\0';
-            return true;
-        }
-        i += 1 + chunk_len;
-    }
-    return false;
-}
-
-void advertisementCallback(BLEAdvertisement *adv)
-{
-    char name[32] = {0};
-    if (!parse_name(adv->getAdvData(), 31, name, sizeof(name)))
-        return;
-    if (strncmp(name, BEACON_PREFIX, BEACON_PREFIX_LEN) != 0)
-        return;
-
-    int idx = beacon_index(name);
-    if (idx < 0)
-        return;
-
-    float rssi = (float)adv->getRssi();
-    constexpr float MAX_RSSI_JUMP = 8.0f; // dB
-    if (seen[idx] && fabsf(rssi - rssi_avg[idx]) > MAX_RSSI_JUMP)
-    {
-        // ignore this one sample, likely a multipath spike
-        return;
-    }
-
-    if (!seen[idx])
-    {
-        rssi_avg[idx] = rssi;
-        seen[idx] = true;
-    }
-    else
-        rssi_avg[idx] = ALPHA * rssi + (1.0f - ALPHA) * rssi_avg[idx];
-
-    Serial.print("r1=");
-    Serial.print(rssi_avg[0], 1);
-    Serial.print(" r2=");
-    Serial.print(rssi_avg[1], 1);
-    Serial.print(" r3=");
-    Serial.println(rssi_avg[2], 1);
-
-    Serial.print("d1=");
-    Serial.print(rssi_to_distance(0, rssi_avg[0]), 1);
-    Serial.print(" d2=");
-    Serial.print(rssi_to_distance(1, rssi_avg[1]), 1);
-    Serial.print(" d3=");
-    Serial.println(rssi_to_distance(2, rssi_avg[2]), 1);
-
-    float tx, ty;
-    if (!trilaterate(&tx, &ty))
-        return;
-
-    kf.update(tx, ty);
-
-    float fx = fmaxf(0.0f, fminf(100.0f, kf.x));
-    float fy = fmaxf(0.0f, fminf(100.0f, kf.y));
-    latestX = fx;
-    latestY = fy;
-
-    Serial.print("raw=(");
-    Serial.print(tx, 1);
-    Serial.print(",");
-    Serial.print(ty, 1);
-    Serial.print(")  kf=(");
-    Serial.print(fx, 1);
-    Serial.print(",");
-    Serial.print(fy, 1);
-    Serial.println(")");
-    Serial.println(rssi);
-}
-
 // =====================================================================
 // ToF, motors and wheel-encoder correction
 // =====================================================================
@@ -381,11 +100,13 @@ constexpr int MAX_SERVO_OFFSET_US = 250;
 
 // Calibrated base commands from the encoder test
 constexpr float LEFT_BASE_SPEED = 0.418f;
-constexpr float RIGHT_BASE_SPEED = 0.455f;
+constexpr float RIGHT_BASE_SPEED = 0.500f;
 
 // Live straight-line correction
-constexpr float ENCODER_KP = 0.45f;
-constexpr float MAX_LIVE_CORRECTION = 0.10f;
+constexpr float ENCODER_KP = 0.25f;
+constexpr float MAX_LIVE_CORRECTION = 0.06f;
+constexpr float LEFT_CORRECTION_SCALE = 0.20f;
+constexpr float RIGHT_CORRECTION_SCALE = 1.5f;
 
 constexpr float MIN_DRIVE_SPEED = 0.30f;
 constexpr float MAX_DRIVE_SPEED = 0.65f;
@@ -402,7 +123,7 @@ constexpr float TICK_TO_CM = 0.72f * PI; // 1 tick ≈ 2.2619 cm (0.442 tick = 1
 // Hardware objects
 // =====================================================================
 
-VL53L1X tof_sensor;
+VL53L1X sensor;
 Servo leftMotor;
 Servo rightMotor;
 
@@ -490,10 +211,6 @@ void readEncoderTicks(uint32_t &leftTicks, uint32_t &rightTicks)
 
 // =====================================================================
 // Motor output
-// =====================================================================
-
-// =====================================================================
-// Motor output (UNCHANGED, but kept for clarity)
 // =====================================================================
 
 void writeMotorCommands(
@@ -588,6 +305,7 @@ void setMotionMode(MotionMode newMode)
         Serial.println("Motion mode: BACKWARD (balanced)");
     }
 }
+
 void startReverse()
 {
     readEncoderTicks(reverseStartLeftTicks, reverseStartRightTicks);
@@ -607,6 +325,31 @@ void getWheelRadians(float &leftRad, float &rightRad)
     leftRad = l * WHEEL_TICK_TO_RAD;
     rightRad = r * WHEEL_TICK_TO_RAD;
 }
+void updateSignedPosition()
+{
+    uint32_t l, r;
+    readEncoderTicks(l, r);
+
+    float avgTicks = (l + r) / 2.0f;
+    float deltaTicks = avgTicks - lastAvgTicksSeen;
+    lastAvgTicksSeen = avgTicks;
+
+    if (motionMode == MotionMode::BACKWARD)
+    {
+        signedPositionTicks -= deltaTicks;
+    }
+    else if (motionMode == MotionMode::FORWARD)
+    {
+        signedPositionTicks += deltaTicks;
+    }
+    // STOPPED: ticks shouldn't be changing anyway, so no branch needed
+}
+
+void getLivePosition(float &liveX, float &liveY)
+{
+    liveX = signedPositionTicks * TICK_TO_CM;
+    liveY = 0.0f; // robot only moves along x
+}
 // =====================================================================
 // Encoder feedback controller
 // =====================================================================
@@ -625,8 +368,7 @@ void updateWheelCorrection()
     const uint32_t nowMs = millis();
 
     if (
-        (nowMs - lastEncoderControlMs) <
-        ENCODER_CONTROL_INTERVAL_MS)
+        (nowMs - lastEncoderControlMs) < ENCODER_CONTROL_INTERVAL_MS)
     {
         return;
     }
@@ -730,10 +472,10 @@ void updateWheelCorrection()
         MAX_LIVE_CORRECTION);
 
     const float leftCommand =
-        LEFT_BASE_SPEED + liveCorrection;
+        LEFT_BASE_SPEED + (liveCorrection * LEFT_CORRECTION_SCALE);
 
     const float rightCommand =
-        RIGHT_BASE_SPEED - liveCorrection;
+        RIGHT_BASE_SPEED - (liveCorrection * RIGHT_CORRECTION_SCALE);
 
     const int movementDirection =
         motionMode == MotionMode::FORWARD
@@ -744,30 +486,6 @@ void updateWheelCorrection()
         leftCommand,
         rightCommand,
         movementDirection);
-
-    //  Serial.print("Encoder L=");
-    //  Serial.print(currentLeftTicks);
-
-    //  Serial.print(" R=");
-    //  Serial.print(currentRightTicks);
-
-    //  Serial.print(" | dL=");
-    //  Serial.print(leftTickChange);
-
-    //  Serial.print(" dR=");
-    //  Serial.print(rightTickChange);
-
-    //  Serial.print(" | error=");
-    //  Serial.print(normalizedError, 4);
-
-    //  Serial.print(" | correction=");
-    //  Serial.print(liveCorrection, 4);
-
-    //  Serial.print(" | motorL=");
-    //  Serial.print(leftCommand, 4);
-
-    //  Serial.print(" motorR=");
-    //  Serial.println(rightCommand, 4);
 }
 
 // =====================================================================
@@ -815,9 +533,9 @@ void setupToF()
     Wire.begin();
     Wire.setClock(100000);
 
-    tof_sensor.setTimeout(500);
+    sensor.setTimeout(500);
 
-    if (!tof_sensor.init())
+    if (!sensor.init())
     {
         Serial.println("VL53L1X not found");
 
@@ -828,9 +546,9 @@ void setupToF()
         }
     }
 
-    tof_sensor.setDistanceMode(VL53L1X::Long);
-    tof_sensor.setMeasurementTimingBudget(50000);
-    tof_sensor.startContinuous(100);
+    sensor.setDistanceMode(VL53L1X::Long);
+    sensor.setMeasurementTimingBudget(50000);
+    sensor.startContinuous(100);
 }
 
 // =====================================================================
@@ -839,15 +557,15 @@ void setupToF()
 
 void handleObstacleAvoidance()
 {
-    if (!tof_sensor.dataReady())
+    if (!sensor.dataReady())
     {
         return;
     }
 
     const uint16_t distance =
-        tof_sensor.read(false);
+        sensor.read(false);
 
-    if (tof_sensor.timeoutOccurred())
+    if (sensor.timeoutOccurred())
     {
         Serial.println("ToF timeout");
 
@@ -903,8 +621,37 @@ void handleObstacleAvoidance()
     }
 }
 
-void telemetry_loop()
+// =====================================================================
+// Main setup and loop
+// =====================================================================
+
+void setup()
 {
+    Serial.begin(115200);
+    delay(2000);
+    connectWiFi();
+    connectMQTT();
+
+    Serial.println(
+        "Starting ToF and encoder correction");
+
+    setupMotors();
+    setupEncoders();
+    setupToF();
+    setMotionMode(MotionMode::FORWARD);
+    resetEncoderController();
+
+    Serial.println("Pico is driving.");
+}
+
+void loop()
+{
+    if (!mqttClient.connected())
+    {
+        connectMQTT();
+    }
+
+    mqttClient.loop();
 
     // =====================================================
     // 1. OBSTACLE PUBLISH (ONE TIME ONLY)
@@ -936,7 +683,7 @@ void telemetry_loop()
     }
 
     // =====================================================
-    // 2. TELEMETRY STREAM (Should not exceed 6 Hz)
+    // 2. TELEMETRY STREAM (24 Hz ALWAYS)
     // =====================================================
     if (
         telemetryEnabled &&
@@ -946,9 +693,12 @@ void telemetry_loop()
 
         JsonDocument botDoc;
 
+        float liveX, liveY;
+        getLivePosition(liveX, liveY);
+
         JsonObject pos = botDoc["position"].to<JsonObject>();
-        pos["x"] = obstacleX / 100.0f;
-        pos["y"] = obstacleY / 100.0f;
+        pos["x"] = liveX / 100.0f;
+        pos["y"] = liveY / 100.0f;
         pos["z"] = latestZ / 100.0f;
 
         JsonObject wheels = botDoc["wheels"].to<JsonObject>();
@@ -973,51 +723,8 @@ void telemetry_loop()
             firstTelemetryPrinted = true;
         }
     }
-}
-
-// =====================================================================
-// Main setup and loop
-// =====================================================================
-
-void setup()
-{
-    Serial.begin(115200);
-    delay(2000);
-    connectWiFi();
-    connectMQTT();
-
-    Serial.println(
-        "Starting BLE positioning, ToF and encoder correction");
-
-    setupMotors();
-    setupEncoders();
-    setupToF();
-    setMotionMode(MotionMode::FORWARD);
-    resetEncoderController();
-
-    kf.initialised = false;
-
-    BTstack.setBLEAdvertisementCallback(
-        advertisementCallback);
-
-    BTstack.setup();
-    BTstack.bleStartScanning();
-
-    Serial.println("Pico is scanning and driving.");
-}
-
-void loop()
-{
-    if (!mqttClient.connected())
-    {
-        connectMQTT();
-    }
-
-    mqttClient.loop();
-    BTstack.loop();
-
-    telemetry_loop();
 
     handleObstacleAvoidance();
     updateWheelCorrection();
+    updateSignedPosition();
 }
