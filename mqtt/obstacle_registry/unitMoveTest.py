@@ -48,7 +48,8 @@ while 1 == 1:
 
     unit["position"]["z"] = math.sin(1/update_freq * time_step) + height_offset
     unit["position"]["y"] = math.tan(1/update_freq * time_step)/4 
-    unit["position"]["x"] = math.cos(2/update_freq * time_step)*5 + 5
+    road_length = 6
+    unit["position"]["x"] = math.cos(2/update_freq * time_step)*(road_length/2) + (road_length/2)
 
     time.sleep(1/update_freq)
     

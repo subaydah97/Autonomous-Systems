@@ -87,6 +87,7 @@ def get_new_id(obstacleCache=obstacleCache):
         newID = 0
     return newID
 
+# Obstacle format ought to be {"id":<id>, "payload":<obstacle format outlined in IDD>}
 def create_obstacle(obstacle):
     
     if isinstance(obstacle["payload"],str): print(PRFX,"Atribute error caught. Object not created"); return
