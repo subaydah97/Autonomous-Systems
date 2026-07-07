@@ -20,12 +20,18 @@ When gracefully terminated, the program will attempt to store the registry as a 
 The program can be prompted to output the full registry to topic "OR/COMPLETE_REGISTRY" as an array of JSON objects, encoded in utf-8.
 
 # Adding obstacles
-Publish to "OR/NEW"
-Payload will be stored as bytes.
+Publish to "OR/NEW". See "obstacleTestData.json"
+
+# Moving obstacles
+Publish to "OR/MOV. See "obstacleMoveTest.py"
+{
+    "id":int,
+    "payload":JSON
+ }
 
 # Removing obstacles
-Publish to "OR/REM"
-The payload should be an integer represented as a utf-8 string. 
+Publish a single obstacle id to "OR/REM"
+The payload should be an integer represented as a utf-8 string. The registry will remove the obstacle with that id.
 
 # Auxiliary Commands
 Publish to "OR/COMMANDS"
