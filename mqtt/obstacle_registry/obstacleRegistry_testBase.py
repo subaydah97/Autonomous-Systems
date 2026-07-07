@@ -3,7 +3,7 @@ import paho.mqtt.publish as publish
 HOSTNAME = "localhost"
 
 
-testData = open("obstacleTestData.json","r").read()
+testData = open("../obstacleTestData.json","r").read()
 
 publish.single("OR/COMMANDS", f"CLEAR", hostname=HOSTNAME)
 
