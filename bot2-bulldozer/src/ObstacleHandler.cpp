@@ -82,14 +82,30 @@ void handleObstacleAvoidance()
 
         if (avgBack >= avgForward && avgForward > 0)
         {
-            robotState = HOME;
             pushingObstacle = false;
 
             Serial.println("Returned to start.");
 
-            setMotionMode(MotionMode::STOPPED);
-            signedPositionTicks = 0;
-            lastAvgTicksSeen = 0;
+            resetPosition();
+
+            if (getNextTask())
+            {
+                Serial.println("Starting next queued task.");
+
+                robotState = GOING_OUT;
+
+                resetEncoderController();
+
+                setMotionMode(MotionMode::FORWARD);
+            }
+            else
+            {
+                robotState = WAITING_FOR_TARGET;
+
+                setMotionMode(MotionMode::STOPPED);
+
+                Serial.println("Waiting for new tasks.");
+            }
         }
     }
 }
@@ -128,36 +144,39 @@ void mqttCallback(
 
     // Bot 1 sends meters.
     // Convert received values back to centimeters internally.
-    targetXcm = position["x"].as<float>() * 100.0f;
-    targetYcm = position["y"].as<float>() * 100.0f;
-    targetZcm = position["z"].as<float>() * 100.0f;
+    float x = position["x"].as<float>() * 100.0f;
+    float y = position["y"].as<float>() * 100.0f;
+    float z = position["z"].as<float>() * 100.0f;
+
+    addTask(x, y, z);
 
     newObstacleTargetReceived = true;
 
     Serial.println("Obstacle target received.");
 
     Serial.print("Target in centimeters: x=");
-    Serial.print(targetXcm);
+    Serial.print(x);
 
     Serial.print(" y=");
-    Serial.print(targetYcm);
+    Serial.print(y);
 
     Serial.print(" z=");
-    Serial.println(targetZcm);
+    Serial.println(z);
 
     if (robotState == WAITING_FOR_TARGET)
     {
-        newObstacleTargetReceived = false;
-        pushingObstacle = false;
+        if (getNextTask())
+        {
+            pushingObstacle = false;
 
-        robotState = GOING_OUT;
+            robotState = GOING_OUT;
 
-        resetEncoderController();
+            resetEncoderController();
+            resetPosition();
 
-        Serial.println(
-            "Starting bulldozer movement.");
+            Serial.println("Starting next task.");
 
-        setMotionMode(MotionMode::FORWARD);
-        resetPosition();
+            setMotionMode(MotionMode::FORWARD);
+        }
     }
 }
