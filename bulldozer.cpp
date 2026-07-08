@@ -31,6 +31,11 @@ float latestZcm = 0.0f;
 float signedPositionTicks = 0.0f;
 float lastAvgTicksSeen = 0.0f;
 bool positionInitialized = false;
+
+// Fixed simulation start position
+constexpr float START_X_CM = 0.0f;
+constexpr float START_Y_CM = 0.0f;
+
 // Obstacle target received from bot 1
 float targetXcm = 0.0f;
 float targetYcm = 0.0f;
@@ -267,11 +272,22 @@ void updateSignedPosition()
         signedPositionTicks += deltaTicks;
     }
 }
+void resetPosition()
+{
+    uint32_t l, r;
+    readEncoderTicks(l, r);
+
+    signedPositionTicks = 0;
+    lastAvgTicksSeen = (l + r) / 2.0f;
+    positionInitialized = true;
+
+    Serial.println("Position reset to X=0 Y=0");
+}
 
 void getLivePosition(float &liveX, float &liveY)
 {
-    liveX = signedPositionTicks * TICK_TO_CM;
-    liveY = 0.0f;
+    liveX = START_X_CM + (signedPositionTicks * TICK_TO_CM * 0.1);
+    liveY = START_Y_CM;
 }
 
 // =====================================================================
@@ -729,10 +745,8 @@ void mqttCallback(
         Serial.println(
             "Starting bulldozer movement.");
 
-        setMotionMode(
-            MotionMode::FORWARD);
-        signedPositionTicks = 0;
-        lastAvgTicksSeen = 0;
+        setMotionMode(MotionMode::FORWARD);
+        resetPosition();
     }
 }
 
@@ -760,6 +774,7 @@ void setup()
 
     robotState =
         WAITING_FOR_TARGET;
+        resetPosition();
 
     Serial.println(
         "Bulldozer waiting for obstacle data...");

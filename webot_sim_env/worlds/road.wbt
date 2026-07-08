@@ -11,7 +11,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation 0.24613810597033403 -0.20392342964965068 -0.9475395863124983 4.472671792759575
-  position 0.4258251991101135 -4.797043956365238 3.203786724694414
+  position 0.3534600927478442 -4.414712348305843 2.9869972933809086
 }
 TexturedBackground {
 }
@@ -66,4 +66,9 @@ Forest {
   ]
   type "spruce"
   maxRadius 2
+}
+chariot {
+  translation 0 0 0.1
+  name "13"
+  controller "sim_unit"
 }
