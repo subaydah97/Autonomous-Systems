@@ -11,7 +11,12 @@ float signedPositionTicks = 0.0f;
 float lastAvgTicksSeen = 0.0f;
 bool positionInitialized = false;
 
-// Obstacle target received from bot 1
+Task taskQueue[MAX_TASKS];
+
+int queueHead = 0;
+int queueTail = 0;
+
+// Current target
 float targetXcm = 0.0f;
 float targetYcm = 0.0f;
 float targetZcm = 0.0f;
