@@ -3,7 +3,7 @@
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, Motor, DistanceSensor
 from controller import Supervisor, Node
-import paho.mqtt.client as mqtt
+
 import paho.mqtt.publish as publish
 from enum import Enum
 import json
@@ -11,17 +11,13 @@ import json
 # Declarations
 class States(Enum):
     traversing_to_reserved_yband = "traversing_to_reserved_yband"
-    looking_for_obstacles_on_x_axis = "looking_for_obstacles_on_x_axis"
+    traversing_x_axis = "looking_for_obstacles_on_x_axis"
     traversing_home_x = "traversing_home_x"
-
-class Position():
-    x = float(0)
-    y = float(0)
-    z = float(0)
+    rest = "rest"
 
 # Variables
 
-reserved_y_band = [-0.20,-0.50]
+reserved_y_band = [-0.50,-0.20]
 my_width = 0.20
 
 sim_obstacles = [
@@ -69,22 +65,22 @@ def in_reserved_y_band():
 
     returnVal = False
     
-    if lp[1] > reserved_y_band[0] & lp[1] < reserved_y_band[1]:
+    if lp[1] > reserved_y_band[0] and lp[1] < reserved_y_band[1]:
         returnVal = True
     
     return returnVal
 # Routines
 
 # Retuns detected obstacle id, or -1 if none
-def obstacle_detection():
+def obstacle_detection_routine():
     global state
     returnval = -1
     for obstacle in sim_obstacles:
-        botX = positionField[0]
-        if botX - obstacle["payload"]["position"]["x"] < 0.1:
+        botX = lp[0]
+        if abs(botX - obstacle["payload"]["position"]["x"]) < 0.1:
             returnval = obstacle["id"]
             
-            publish.single("OR/NEW", json.dumps(obstacle["payload"]), "localhost")
+            publish.single("OR/NEW", json.dumps(obstacle["payload"]), hostname="localhost")
             sim_obstacles.remove(obstacle)
             state = States.traversing_home_x
             break
@@ -122,7 +118,17 @@ while robot.step(timestep) != -1:
         case States.traversing_to_reserved_yband:
             move([0,-0.05,0])
             if in_reserved_y_band():
-                state = States.looking_for_obstacles_on_x_axis
+                state = States.traversing_x_axis
+            print(PRFX,"lp:",lp)
+        case States.traversing_x_axis:
+            move([0.05,0,0])
+            obstacle_detection_routine()
+        case States.traversing_home_x:
+            move([-0.05,0,0])
+            if(lp[0] < 0.1):
+                state = States.rest
+        case States.rest:
+            pass
         case _:
             print(PRFX,"State machine doesn't acount for state:",state)
     # Process sensor data here.
