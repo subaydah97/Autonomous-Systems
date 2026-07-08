@@ -52,16 +52,3 @@ extern uint32_t forwardLeftTicks;
 extern uint32_t forwardRightTicks;
 extern bool pushingObstacle;
 extern uint32_t pushStartTime;
-
-struct Task
-{
-    float x;
-    float y;
-    float z;
-};
-
-constexpr int MAX_TASKS = 10;
-
-extern Task taskQueue[MAX_TASKS];
-extern int queueHead;
-extern int queueTail;
