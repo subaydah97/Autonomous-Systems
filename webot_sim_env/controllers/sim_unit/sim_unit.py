@@ -49,6 +49,15 @@ lp = positionField.getSFVec3f()
 
 # Functions
 
+def send_telemetry():
+    telemetry_data = {
+        "position": {
+                        "x": lp[0],
+                        "y": lp[1]
+                    }
+        }
+    publish.single(f"bot/{myID}", json.dumps(telemetry_data), hostname="localhost")
+
 # Move to absolute coordinates
 def teleport(p):
     positionField.setSFVec3f([p[0],p[1],p[3]])
@@ -111,6 +120,7 @@ while robot.step(timestep) != -1:
 
     lp = positionField.getSFVec3f()
 
+    send_telemetry()
     # Read the sensors:
     # Enter here functions to read sensor data, like:
     #  val = ds.getValue()
