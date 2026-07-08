@@ -30,3 +30,5 @@ uint32_t reverseStartLeftTicks = 0;
 uint32_t reverseStartRightTicks = 0;
 uint32_t forwardLeftTicks = 0;
 uint32_t forwardRightTicks = 0;
+
+bool emergencyStopActive = false;

@@ -132,6 +132,20 @@ void stopMotors()
     rightMotor.writeMicroseconds(RIGHT_STOP_US);
 }
 
+void activateEmergencyStop()
+{
+    emergencyStopActive = true;
+    telemetryEnabled = false;
+    motionMode = MotionMode::STOPPED;
+
+    stopMotors();
+
+    Serial.println();
+    Serial.println("EMERGENCY STOP ACTIVATED");
+    Serial.println("Motor movement is now blocked.");
+}
+
+
 void resetEncoderController()
 {
     uint32_t currentLeftTicks;
@@ -151,6 +165,15 @@ void resetEncoderController()
 
 void setMotionMode(MotionMode newMode)
 {
+    if (
+        emergencyStopActive &&
+        newMode != MotionMode::STOPPED)
+    {
+        Serial.println(
+            "Movement blocked: emergency stop is active.");
+        return;
+    }
+
     if (motionMode == newMode)
         return;
 

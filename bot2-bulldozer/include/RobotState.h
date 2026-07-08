@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 
+
 enum RobotState
 {
     WAITING_FOR_TARGET,
@@ -27,6 +28,7 @@ extern float latestZcm;
 extern float signedPositionTicks;
 extern float lastAvgTicksSeen;
 extern bool positionInitialized;
+extern bool emergencyStopActive;
 
 extern float targetXcm;
 extern float targetYcm;

@@ -3,11 +3,15 @@
 #include "DriveSystem.h"
 #include "ObstacleHandler.h"
 #include "Telemetry.h"
+#include "RobotState.h"
 
 void setup()
 {
     Serial.begin(115200);
     delay(2000);
+
+    mqttClient.setCallback(mqttCallback);
+
     connectWiFi();
     connectMQTT();
 
@@ -31,6 +35,11 @@ void loop()
     }
 
     mqttClient.loop();
+    
+    if (emergencyStopActive){
+    stopMotors();
+    return;
+    }
 
     handleObstaclePublish();
     handleTelemetry();

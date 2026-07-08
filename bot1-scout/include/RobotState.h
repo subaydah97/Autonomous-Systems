@@ -22,6 +22,7 @@ extern unsigned long waitStartTime;
 extern unsigned long lastTelemetryMs;
 extern bool firstTelemetryPrinted;
 extern bool telemetryEnabled;
+extern bool emergencyStopActive;
 
 extern float latestZ;
 extern float obstacleX;

@@ -26,3 +26,4 @@ void updateWheelCorrection();
 void setupMotors();
 void setupEncoders();
 void setupToF();
+void activateEmergencyStop();

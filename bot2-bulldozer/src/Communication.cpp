@@ -1,9 +1,12 @@
+#include <cstring>
 #include <Arduino.h>
 #include "Communication.h"
+#include "DriveSystem.h"
 
 const char *ssid = "mn-92937";
 const char *password = "12345679";
 const char *mqttServer = "192.168.212.106";
+const char *COMMAND_TOPIC = "bot/2/COMMANDS";
 const char *OBSTACLE_TOPIC = "OR/NEW";
 
 WiFiClient wifiClient;
@@ -40,9 +43,11 @@ void connectMQTT()
         {
             Serial.println("connected");
 
+            mqttClient.subscribe(COMMAND_TOPIC);
             mqttClient.subscribe(OBSTACLE_TOPIC);
 
             Serial.println("Subscribed to OR/NEW");
+            Serial.println("Subscribed to bot/2/COMMANDS");
         }
         else
         {

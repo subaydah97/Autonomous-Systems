@@ -99,12 +99,45 @@ void mqttCallback(
     byte *payload,
     unsigned int length)
 {
+    // Emergency command for bot 2
+    if (strcmp(topic, COMMAND_TOPIC) == 0)
+    {
+        String command;
+        command.reserve(length);
+
+        for (unsigned int i = 0; i < length; i++)
+        {
+            command += static_cast<char>(payload[i]);
+        }
+
+        command.trim();
+
+        Serial.print("Command received: ");
+        Serial.println(command);
+
+        if (command == "ESTOP")
+        {
+            activateEmergencyStop();
+        }
+
+        return;
+    }
+
+    // Ignore obstacle messages after an emergency stop
+    if (emergencyStopActive)
+    {
+        return;
+    }
+
+    // Existing obstacle-message check
     if (strcmp(topic, OBSTACLE_TOPIC) != 0)
     {
         return;
     }
 
     JsonDocument doc;
+
+    // Keep the rest of the existing callback unchanged
 
     DeserializationError error =
         deserializeJson(doc, payload, length);

@@ -40,6 +40,12 @@ void loop()
 
     mqttClient.loop();
 
+    if (emergencyStopActive)
+    {
+        stopMotors();
+        return;
+    }
+
     handleTelemetry();
     handleObstacleAvoidance();
     updateWheelCorrection();
