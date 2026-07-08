@@ -3,18 +3,19 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>ForestXplore</title>
+    <title>Forest Xplore</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kablammo&family=Kalam:wght@400;700&display=swap');
         /*import google fonts for the dashboard*/
 
         :root {
-            --dark-green: #7CAD82;
-            --mint: #DFF3DE;
-            --olive: #8B9A6B;
-            --cream: #EAF3E4;
-            --text-dark: #4B6350;
+            --dark-green: #363a28;
+            --mint: #e6d2ba;
+            --olive: #625D3F;
+            --cream: #EBE3D8;
+            --text-dark: #40523e;
             --white: #FFFFFF;
+            --brown: #522a0b;
         }
 
         * {
@@ -33,8 +34,13 @@
         .landing {
             height: 100vh;
             background: var(--dark-green);
+            background-image: url('PNW.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             display: flex;
             align-items: center;
+            justify-content: center;
             padding-left: 8%;
             transition: opacity .4s ease;
         }
@@ -45,6 +51,7 @@
 
         .landing-content {
             max-width: 600px;
+            text-align: center;
         }
 
         .logo-title {
@@ -55,6 +62,7 @@
         }
 
         .subtitle {
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
             font-size: 16px;
             color: var(--cream);
             margin-top: 8px;
@@ -65,7 +73,7 @@
             background: var(--olive);
             color: var(--white);
             border: none;
-            font-family: 'Kalam', cursive;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
             font-size: 18px;
             padding: 14px 40px;
             border-radius: 30px;
@@ -118,7 +126,7 @@
         }
 
         .panel-label {
-            font-family: 'Kablammo', cursive;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
             font-size: 20px;
             color: var(--olive);
             margin-bottom: 14px;
@@ -155,6 +163,87 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
         }
 
+        /* Obstacle event log panel */
+        .log-card {
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12.5px;
+            color: var(--text-dark);
+        }
+
+        .log-entry {
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e5ece2;
+            line-height: 1.35;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            display: block;
+            font-size: 10.5px;
+            color: var(--olive);
+            margin-bottom: 1px;
+        }
+
+        .log-empty {
+            font-size: 12.5px;
+            color: #a9b6a2;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        /* Bot status panel */
+        .status-card {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            overflow-y: auto;
+        }
+
+        .status-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-name-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-name {
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            font-size: 15px;
+            color: var(--olive);
+        }
+
+        .status-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .status-sub {
+            font-size: 11.5px;
+            color: #7a8a75;
+            margin-top: 2px;
+        }
+
         .emergency-row {
             display: flex;
             align-items: center;
@@ -174,7 +263,7 @@
         }
 
         .emergency-text {
-            font-family: 'Kalam', cursive;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
             font-weight: 700;
             font-size: 20px;
             color: #1a1a1a;
@@ -183,17 +272,16 @@
         .bot {
             width: 12px;
             height: 12px;
-            /* background is now set per-bot in JS via inline style */
-            background: rgb(12, 84, 84);
+            background: var(--dark-green);
             border-radius: 50%;
             position: absolute;
             transform: translate(-50%, -50%);
         }
 
         .obstacle {
-            width: 12px;
-            height: 12px;
-            background: rgb(48, 31, 28);
+            width: 18px;
+            height: 6px;
+            background: var(--brown);
             position: absolute;
             transform: translate(-50%, -50%);
         }
@@ -205,7 +293,7 @@
     <!-- landing screen to connect to mqtt -->
     <div class="landing" id="landingScreen">
         <div class="landing-content">
-            <div class="logo-title">ForestXplore</div>
+            <div class="logo-title">Forest Xplore</div>
             <div class="subtitle">Scout and bulldozer dashboard</div>
             <button class="connect-btn" id="connectBtn">Connect</button>
         </div>
@@ -213,7 +301,7 @@
 
     <!-- the dashboard -->
     <div class="dashboard-screen" id="dashboardScreen">
-        <div class="dash-header">ForestXplore</div>
+        <div class="dash-header">Forest Xplore</div>
 
         <div class="panels">
             <div class="panel-col map-col">
@@ -232,16 +320,25 @@
                     </svg>
                     <div class="emergency-text">Emergency stop</div>
                 </div>
+                <div class="emergency-row" id="clearObstacles">
+                    <div class="emergency-text">Clear obstacles</div>
+                </div>
+                <div class="emergency-row" id="clearBots">
+                    <div class="emergency-text">Clear bots</div>
+                </div>
             </div>
 
             <div class="panel-col">
                 <div class="panel-label">Obstacles</div>
-                <div class="side-card"></div>
+                <div class="side-card log-card" id="obstacleLog">
+                    <div class="log-empty" id="obstacleLogEmpty">No obstacle events yet</div>
+                </div>
             </div>
 
             <div class="panel-col">
                 <div class="panel-label">Bot status</div>
-                <div class="side-card"></div>
+                <div class="side-card status-card" id="botStatusCard">
+                </div>
             </div>
         </div>
     </div>
@@ -253,6 +350,10 @@
         const obstacleMarkers = {};
 
         let nextLocalObstacleId = 0;
+
+        const pendingObstacles = [];
+
+        const MATCH_THRESHOLD = 0.3;
 
         const botColorPalette = ["#0C5454", "#2E8B57", "#5D4037"];
         const botColors = {};
@@ -266,10 +367,95 @@
             return botColors[id];
         }
 
+        const BOT_ROLES = { '1': 'Scout', '2': 'Bulldozer' };
+        const HOME_THRESHOLD = 0.2;
+        const lastDistances = {};
+        const transientTimers = {};
+        const botStatusCard = document.getElementById('botStatusCard');
+
+        function distanceToHome(x, y) { // straight-line distance from the assumed home point (0,0)
+            return Math.sqrt(x * x + y * y);
+        }
+
+        function ensureBotStatusBlock(id) { // creates the status block DOM for a bot the first time we hear from it
+            if (document.getElementById('botStatus-' + id)) return;
+
+            const role = BOT_ROLES[id] || ('Bot ' + id);
+            const block = document.createElement('div');
+            block.className = 'status-block';
+            block.id = 'botStatus-' + id;
+            block.innerHTML = `
+                <div class="status-name-row">
+                    <div class="status-dot" style="background:${getColorForBot(id)}"></div>
+                    <div class="status-name">${role} (bot ${id})</div>
+                </div>
+                <div class="status-text">No data yet</div>
+                <div class="status-sub"></div>
+            `;
+            botStatusCard.appendChild(block);
+        }
+
+        function renderBotStatus(id, text, sub) { // writes the given status text/subtext into a bot's status block
+            ensureBotStatusBlock(id);
+            const block = document.getElementById('botStatus-' + id);
+            block.querySelector('.status-text').textContent = text;
+            if (sub !== undefined) {
+                block.querySelector('.status-sub').textContent = sub;
+            }
+        }
+
+        function setTransientStatus(id, text, durationMs) { // sets a temporary status for a bot that will be cleared after the given duration, allowing movement-based status to resume
+            renderBotStatus(id, text);
+            if (transientTimers[id]) clearTimeout(transientTimers[id]);
+            transientTimers[id] = setTimeout(() => {
+                transientTimers[id] = null;
+                // next telemetry message will recompute the real movement-based status
+            }, durationMs);
+        }
+
+        function updateBotMovementStatus(id, x, y) { // derives a movement-based status from position deltas since we have no explicit state field
+            if (transientTimers[id]) return;
+
+            const dist = distanceToHome(x, y);
+            const prevDist = lastDistances[id];
+            lastDistances[id] = dist;
+
+            const role = BOT_ROLES[id] || ('Bot ' + id);
+            const coords = `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+
+            if (dist <= HOME_THRESHOLD) {
+                renderBotStatus(id, 'At home', coords);
+                return;
+            }
+
+            if (prevDist !== undefined && dist < prevDist - 0.01) {
+                renderBotStatus(id, 'Returning home', coords);
+            } else {
+                const activeLabel = role === 'Scout' ? 'Exploring' : 'Working';
+                renderBotStatus(id, activeLabel, coords);
+            }
+        }
+
+        function addObstacleLogEntry(text) { // prepends a timestamped line to the log, trimming old entries so the panel doesn't grow forever
+            const log = document.getElementById('obstacleLog');
+            const empty = document.getElementById('obstacleLogEmpty');
+            if (empty) empty.remove();
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">${time}</span>${text}`;
+            log.insertBefore(entry, log.firstChild);
+
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
         document.getElementById('connectBtn').addEventListener('click', connect);
 
         function connect() { // connects to the MQTT server and sets up subscriptions and message handling
-            const url = "ws://192.168.212.106:9001"; // mqtt server url 
+            const url = "ws://192.168.212.106:9001"; // mqtt server url
 
             if (client && client.connected) return;
 
@@ -294,45 +480,69 @@
 
             client.on('message', (topic, payload) => { // handles incoming messages from the MQTT server, updating the dashboard based on the topic and payload
                 try {
-                    if (topic === "OR/NEW") { // new obstacle detected, create a temporary marker for it
-
+                    if (topic === "OR/NEW") {
                         const payloadObj = JSON.parse(payload.toString()); // parse the payload to get the position of the new obstacle
                         const pos = payloadObj.position;
                         if (!pos) return;
 
-                        const id = "local-" + (nextLocalObstacleId++); // generate a unique local ID for the new obstacle marker
+                        const tempId = "local-" + (nextLocalObstacleId++);
 
                         const marker = document.createElement("div");
                         marker.className = "obstacle";
                         road.appendChild(marker);
-                        obstacleMarkers[id] = marker;
+                        obstacleMarkers[tempId] = marker;
 
                         const roadWidth = road.clientWidth;
                         const roadHeight = road.clientHeight;
                         marker.style.top = (roadHeight - (pos.x / 6) * roadHeight) + "px"; // road is 6meters long in dashboard
                         marker.style.left = (roadWidth / 2 + pos.y * roadWidth) + "px";
+
+                        pendingObstacles.push({ tempId, marker, x: pos.x, y: pos.y });
+
+                        addObstacleLogEntry(`Obstacle found at (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`);
+                        setTransientStatus('1', 'Found obstacle!', 4000);
                         return;
                     }
 
-                    if (topic === "OR/MOV") { // update to an existing obstacle's position
+                    if (topic === "OR/MOV") {
                         // OR/MOV uses the {id, payload} wrapper
                         const obstacle = JSON.parse(payload.toString()); // parse the payload to get the obstacle's id and position
                         const id = obstacle.id;
                         const pos = obstacle.payload && obstacle.payload.position;
-                        if (!pos) return; // e.g. a rotation-only update with no position yet
+                        if (!pos) return;
 
                         let marker = obstacleMarkers[id];
-                        if (!marker) { // if the marker doesn't exist yet, create it
-                            marker = document.createElement("div");
-                            marker.className = "obstacle";
-                            road.appendChild(marker);
-                            obstacleMarkers[id] = marker;
+
+                        if (!marker) {
+                            let bestMatch = null;
+                            let bestDist = Infinity;
+                            pendingObstacles.forEach(p => {
+                                const dist = Math.hypot(p.x - pos.x, p.y - pos.y);
+                                if (dist < MATCH_THRESHOLD && dist < bestDist) {
+                                    bestDist = dist;
+                                    bestMatch = p;
+                                }
+                            });
+
+                            if (bestMatch) {
+                                marker = bestMatch.marker;
+                                delete obstacleMarkers[bestMatch.tempId];
+                                obstacleMarkers[id] = marker;
+                                pendingObstacles.splice(pendingObstacles.indexOf(bestMatch), 1);
+                            } else {
+                                marker = document.createElement("div");
+                                marker.className = "obstacle";
+                                road.appendChild(marker);
+                                obstacleMarkers[id] = marker;
+                            }
                         }
 
                         const roadWidth = road.clientWidth;
                         const roadHeight = road.clientHeight;
                         marker.style.top = (roadHeight - (pos.x / 6) * roadHeight) + "px";
                         marker.style.left = (roadWidth / 2 + pos.y * roadWidth) + "px";
+
+                        addObstacleLogEntry(`Obstacle ${id} moved to (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`);
                         return;
                     }
 
@@ -342,6 +552,9 @@
                             road.removeChild(obstacleMarkers[id]);
                             delete obstacleMarkers[id];
                         }
+
+                        addObstacleLogEntry(`Obstacle ${id} removed`);
+                        setTransientStatus('2', 'Removing obstacle', 4000);
                         return;
                     }
 
@@ -350,6 +563,7 @@
 
                         Object.values(obstacleMarkers).forEach(marker => road.removeChild(marker)); // remove all existing markers from the road
                         for (const key in obstacleMarkers) delete obstacleMarkers[key]; // clear the obstacleMarkers object
+                        pendingObstacles.length = 0; // any obstacles we were still waiting to match are now resolved by this resync
 
                         const roadWidth = road.clientWidth;
                         const roadHeight = road.clientHeight;
@@ -357,7 +571,7 @@
                         registry.forEach(obstacle => { // for each obstacle in the registry, create a new marker and position it on the road
                             const id = obstacle.id;
                             const pos = obstacle.payload && obstacle.payload.position;
-                            if (!pos) return; 
+                            if (!pos) return;
 
                             const marker = document.createElement("div");
                             marker.className = "obstacle";
@@ -366,6 +580,8 @@
                             road.appendChild(marker);
                             obstacleMarkers[id] = marker;
                         });
+
+                        addObstacleLogEntry(`Synced obstacle registry (${registry.length} obstacle${registry.length === 1 ? '' : 's'})`);
                         return;
                     }
 
@@ -392,6 +608,8 @@
                         const roadHeight = road.clientHeight;
                         bot.style.top = (roadHeight - (x / 6) * roadHeight) + "px";
                         bot.style.left = (roadWidth / 2 + y * roadWidth) + "px";
+
+                        updateBotMovementStatus(id, x, y);
                     }
                 } catch (e) {
                     console.error(e);
@@ -401,7 +619,7 @@
 
         // emergency stop button functionality
         const bots = ['1', '2'];
-        document.getElementById('emergencyStop').addEventListener('click', () => { 
+        document.getElementById('emergencyStop').addEventListener('click', () => {
             if (!client || !client.connected) {
                 alert('oops! not connected to server');
                 return;
@@ -412,6 +630,42 @@
 
             alert('all bots stopped.');
         });
+
+        // clear obstacles button functionality
+        document.getElementById('clearObstacles').addEventListener('click', clearObstacleRegistry);
+        function clearObstacleRegistry() {
+            if (!client || !client.connected) {
+                alert('oops! not connected to server');
+                return;
+            }
+
+            client.publish("OR/COMMANDS", "CLEAR");
+
+            Object.values(obstacleMarkers).forEach(marker => road.removeChild(marker));
+            for (const key in obstacleMarkers) delete obstacleMarkers[key];
+            pendingObstacles.length = 0;
+
+            addObstacleLogEntry(`Cleared obstacle registry`);
+
+            setTimeout(() => {
+                if (client && client.connected) {
+                    client.publish("OR/COMMANDS", "SPIT");
+                }
+            }, 500);
+        }
+
+        // clear bots button functionality
+        document.getElementById('clearBots').addEventListener('click', clearBots); 
+        function clearBots() {
+            Object.values(botMarkers).forEach(marker => road.removeChild(marker));
+            for (const key in botMarkers) delete botMarkers[key];
+            for (const key in lastDistances) delete lastDistances[key];
+            for (const id in transientTimers) {
+                if (transientTimers[id]) clearTimeout(transientTimers[id]);
+                transientTimers[id] = null;
+            }
+            botStatusCard.innerHTML = '';
+        }
 
 
     </script>

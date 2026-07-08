@@ -26,4 +26,6 @@ void updateWheelCorrection();
 void setupMotors();
 void setupEncoders();
 void setupToF();
+void addTask(float x, float y, float z);
+bool getNextTask();
 void activateEmergencyStop();

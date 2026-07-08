@@ -67,8 +67,8 @@ Forest {
   type "spruce"
   maxRadius 2
 }
-chariot {
-  translation 0 0 0.1
-  name "13"
+Robot {
+  name "14"
   controller "sim_unit"
+  supervisor TRUE
 }
