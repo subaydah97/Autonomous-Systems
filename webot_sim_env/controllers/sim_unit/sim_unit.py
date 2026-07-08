@@ -54,7 +54,10 @@ def send_telemetry():
         "position": {
                         "x": float(lp[0]),
                         "y": float(lp[1])
-                    }
+                    },
+        "rotation": {
+                 "radians_from_north": 3.14
+             }
         }
     publish.single(f"bot/{int(myID)-10}", json.dumps(telemetry_data), hostname="localhost")
 
