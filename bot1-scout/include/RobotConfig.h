@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-#define _telemetry_target "bot/2"
+#define _telemetry_target "bot/1"
 
 // ToF pins
 #define TOF_SDA_PIN 4
@@ -47,12 +47,7 @@ constexpr float MAX_DRIVE_SPEED = 0.65f;
 constexpr uint32_t ENCODER_CONTROL_INTERVAL_MS = 500;
 constexpr uint32_t ENCODER_TIMEOUT_MS = 2500;
 constexpr uint32_t MIN_ENCODER_INTERVAL_US = 3000;
-
 constexpr float WHEEL_TICK_TO_RAD = (2.0f * PI) / 10.0f;
 constexpr float TICK_TO_CM = 0.72f * PI; // 1 tick ≈ 2.2619 cm (0.442 tick = 1 cm)
 
-const int TELEMETRY_INTERVAL_MS = 1000 / 2; // Approximately 41 ms
-
-// Fixed simulation start position
-constexpr float START_X_CM = 0.0f;
-constexpr float START_Y_CM = 0.0f;
+const int TELEMETRY_INTERVAL_MS = 1000 / 2;
