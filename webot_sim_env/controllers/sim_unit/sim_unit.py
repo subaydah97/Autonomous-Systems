@@ -52,11 +52,11 @@ lp = positionField.getSFVec3f()
 def send_telemetry():
     telemetry_data = {
         "position": {
-                        "x": lp[0],
-                        "y": lp[1]
+                        "x": float(lp[0]),
+                        "y": float(lp[1])
                     }
         }
-    publish.single(f"bot/{myID}", json.dumps(telemetry_data), hostname="localhost")
+    publish.single(f"bot/{int(myID)-10}", json.dumps(telemetry_data), hostname="localhost")
 
 # Move to absolute coordinates
 def teleport(p):
