@@ -30,7 +30,16 @@ void handleObstacleAvoidance()
 
         if (!pushingObstacle && liveX >= targetXcm)
         {
-            readEncoderTicks(forwardLeftTicks, forwardRightTicks);
+            uint32_t currentLeft;
+            uint32_t currentRight;
+
+            readEncoderTicks(currentLeft, currentRight);
+
+            forwardLeftTicks =
+                currentLeft - forwardStartLeftTicks;
+
+            forwardRightTicks =
+                currentRight - forwardStartRightTicks;
 
             pushingObstacle = true;
             pushStartTime = millis();
@@ -79,6 +88,18 @@ void handleObstacleAvoidance()
 
         const uint32_t avgForward =
             (forwardLeftTicks + forwardRightTicks) / 2;
+
+        Serial.print("Forward=");
+        Serial.print(avgForward);
+
+        Serial.print(" Back=");
+        Serial.print(avgBack);
+
+        Serial.print(" Lback=");
+        Serial.print(leftBack);
+
+        Serial.print(" Rback=");
+        Serial.println(rightBack);
 
         if (avgBack >= avgForward && avgForward > 0)
         {
@@ -173,6 +194,10 @@ void mqttCallback(
 
             resetEncoderController();
             resetPosition();
+
+            readEncoderTicks(
+                forwardStartLeftTicks,
+                forwardStartRightTicks);
 
             Serial.println("Starting next task.");
 
