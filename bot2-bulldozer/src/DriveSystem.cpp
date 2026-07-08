@@ -97,7 +97,35 @@ void getLivePosition(float &liveX, float &liveY)
     liveX = START_X_CM + (signedPositionTicks * TICK_TO_CM * 0.1);
     liveY = START_Y_CM;
 }
+void addTask(float x, float y, float z)
+{
+    int nextTail = (queueTail + 1) % MAX_TASKS;
 
+    if (nextTail == queueHead)
+    {
+        Serial.println("Task queue full!");
+        return;
+    }
+
+    taskQueue[queueTail] = {x, y, z};
+    queueTail = nextTail;
+
+    Serial.println("Task added.");
+}
+
+bool getNextTask()
+{
+    if (queueHead == queueTail)
+        return false;
+
+    targetXcm = taskQueue[queueHead].x;
+    targetYcm = taskQueue[queueHead].y;
+    targetZcm = taskQueue[queueHead].z;
+
+    queueHead = (queueHead + 1) % MAX_TASKS;
+
+    return true;
+}
 void writeMotorCommands(
     float leftSpeed,
     float rightSpeed,
