@@ -286,7 +286,7 @@ void resetPosition()
 
 void getLivePosition(float &liveX, float &liveY)
 {
-    liveX = START_X_CM + (signedPositionTicks * TICK_TO_CM * 0.01);
+    liveX = START_X_CM + (signedPositionTicks * TICK_TO_CM * 0.1);
     liveY = START_Y_CM;
 }
 
