@@ -121,16 +121,14 @@ while robot.step(timestep) != -1:
     lp = positionField.getSFVec3f()
 
     send_telemetry()
-    # Read the sensors:
-    # Enter here functions to read sensor data, like:
-    #  val = ds.getValue()
-
+    
+    #print(PRFX,"lp:",lp)
+    
     match state:
         case States.traversing_to_reserved_yband:
             move([0,-0.05,0])
             if in_reserved_y_band():
                 state = States.traversing_x_axis
-            print(PRFX,"lp:",lp)
         case States.traversing_x_axis:
             move([0.05,0,0])
             obstacle_detection_routine()
