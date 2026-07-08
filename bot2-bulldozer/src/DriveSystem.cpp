@@ -40,92 +40,6 @@ void readEncoderTicks(uint32_t &leftTicks, uint32_t &rightTicks)
     interrupts();
 }
 
-void getWheelRadians(
-    float &leftRadians,
-    float &rightRadians)
-{
-    uint32_t leftTicks;
-    uint32_t rightTicks;
-
-    readEncoderTicks(leftTicks, rightTicks);
-
-    leftRadians = leftTicks * WHEEL_TICK_TO_RAD;
-    rightRadians = rightTicks * WHEEL_TICK_TO_RAD;
-}
-
-void updateSignedPosition()
-{
-    uint32_t l, r;
-    readEncoderTicks(l, r);
-
-    float avgTicks = (l + r) / 2.0f;
-
-    if (!positionInitialized)
-    {
-        lastAvgTicksSeen = avgTicks;
-        positionInitialized = true;
-        return;
-    }
-
-    float deltaTicks = avgTicks - lastAvgTicksSeen;
-    lastAvgTicksSeen = avgTicks;
-
-    if (motionMode == MotionMode::BACKWARD)
-    {
-        signedPositionTicks -= deltaTicks;
-    }
-    else if (motionMode == MotionMode::FORWARD)
-    {
-        signedPositionTicks += deltaTicks;
-    }
-}
-
-void resetPosition()
-{
-    uint32_t l, r;
-    readEncoderTicks(l, r);
-
-    signedPositionTicks = 0;
-    lastAvgTicksSeen = (l + r) / 2.0f;
-    positionInitialized = true;
-
-    Serial.println("Position reset to X=0 Y=0");
-}
-
-void getLivePosition(float &liveX, float &liveY)
-{
-    liveX = START_X_CM + (signedPositionTicks * TICK_TO_CM * 0.1);
-    liveY = START_Y_CM;
-}
-void addTask(float x, float y, float z)
-{
-    int nextTail = (queueTail + 1) % MAX_TASKS;
-
-    if (nextTail == queueHead)
-    {
-        Serial.println("Task queue full!");
-        return;
-    }
-
-    taskQueue[queueTail] = {x, y, z};
-    queueTail = nextTail;
-
-    Serial.println("Task added.");
-}
-
-bool getNextTask()
-{
-    if (queueHead == queueTail)
-        return false;
-
-    targetXcm = taskQueue[queueHead].x;
-    targetYcm = taskQueue[queueHead].y;
-    targetZcm = taskQueue[queueHead].z;
-
-    queueHead = (queueHead + 1) % MAX_TASKS;
-
-    return true;
-}
 void writeMotorCommands(
     float leftSpeed,
     float rightSpeed,
@@ -183,8 +97,9 @@ void setMotionMode(MotionMode newMode)
         return;
 
     motionMode = newMode;
-    telemetryEnabled =
-        motionMode != MotionMode::STOPPED;
+
+    // Telemetry alleen actief wanneer de chariot rijdt
+    telemetryEnabled = (motionMode != MotionMode::STOPPED);
 
     if (motionMode == MotionMode::STOPPED)
     {
@@ -212,6 +127,52 @@ void setMotionMode(MotionMode newMode)
 
         Serial.println("Motion mode: BACKWARD (balanced)");
     }
+}
+
+void startReverse()
+{
+    readEncoderTicks(reverseStartLeftTicks, reverseStartRightTicks);
+
+    resetEncoderController();
+
+    robotState = GOING_HOME; // IMPORTANT FIX (you forgot this control link)
+
+    setMotionMode(MotionMode::BACKWARD);
+}
+
+void getWheelRadians(float &leftRad, float &rightRad)
+{
+    uint32_t l, r;
+    readEncoderTicks(l, r);
+
+    leftRad = l * WHEEL_TICK_TO_RAD;
+    rightRad = r * WHEEL_TICK_TO_RAD;
+}
+
+void updateSignedPosition()
+{
+    uint32_t l, r;
+    readEncoderTicks(l, r);
+
+    float avgTicks = (l + r) / 2.0f;
+    float deltaTicks = avgTicks - lastAvgTicksSeen;
+    lastAvgTicksSeen = avgTicks;
+
+    if (motionMode == MotionMode::BACKWARD)
+    {
+        signedPositionTicks -= deltaTicks;
+    }
+    else if (motionMode == MotionMode::FORWARD)
+    {
+        signedPositionTicks += deltaTicks;
+    }
+    // STOPPED: ticks shouldn't be changing anyway, so no branch needed
+}
+
+void getLivePosition(float &liveX, float &liveY)
+{
+    liveX = signedPositionTicks * TICK_TO_CM;
+    liveY = 0.0f; // robot only moves along x
 }
 
 void updateWheelCorrection()
@@ -332,12 +293,10 @@ void updateWheelCorrection()
         MAX_LIVE_CORRECTION);
 
     const float leftCommand =
-        LEFT_BASE_SPEED +
-        (liveCorrection * LEFT_CORRECTION_SCALE);
+        LEFT_BASE_SPEED + (liveCorrection * LEFT_CORRECTION_SCALE);
 
     const float rightCommand =
-        RIGHT_BASE_SPEED -
-        (liveCorrection * RIGHT_CORRECTION_SCALE);
+        RIGHT_BASE_SPEED - (liveCorrection * RIGHT_CORRECTION_SCALE);
 
     const int movementDirection =
         motionMode == MotionMode::FORWARD
