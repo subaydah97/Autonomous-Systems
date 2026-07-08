@@ -65,3 +65,6 @@ constexpr int MAX_TASKS = 10;
 extern Task taskQueue[MAX_TASKS];
 extern int queueHead;
 extern int queueTail;
+
+extern uint32_t forwardStartLeftTicks;
+extern uint32_t forwardStartRightTicks;
