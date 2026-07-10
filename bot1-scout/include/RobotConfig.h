@@ -1,3 +1,15 @@
+/*
+ * RobotConfig.h
+ *
+ * Contains the hardware configuration and control parameters for
+ * Bot 1 (Scout Chariot).
+ *
+ * This file defines the pin assignments, motor calibration values,
+ * encoder settings, telemetry configuration, and control constants
+ * used throughout the robot software. Keeping these values in one
+ * place makes the system easier to configure and calibrate.
+ */
+
 #pragma once
 
 #include <Arduino.h>
@@ -50,4 +62,5 @@ constexpr uint32_t MIN_ENCODER_INTERVAL_US = 3000;
 constexpr float WHEEL_TICK_TO_RAD = (2.0f * PI) / 10.0f;
 constexpr float TICK_TO_CM = 0.72f * PI; // 1 tick ≈ 2.2619 cm (0.442 tick = 1 cm)
 
+// Telemetry transmission interval (2 Hz)
 const int TELEMETRY_INTERVAL_MS = 1000 / 2;
