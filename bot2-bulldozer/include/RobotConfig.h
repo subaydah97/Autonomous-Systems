@@ -1,3 +1,14 @@
+/*
+ * RobotConfig.h
+ *
+ * Contains the hardware configuration and control parameters for
+ * Bot 2 (Bulldozer Chariot).
+ *
+ * This file defines the pin assignments, motor calibration values,
+ * encoder settings, telemetry configuration, and control constants
+ * used throughout the robot software. Keeping these values in one
+ * place makes the system easier to configure and calibrate.
+ */
 #pragma once
 
 #include <Arduino.h>
