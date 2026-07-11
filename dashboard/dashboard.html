@@ -345,15 +345,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <script>
         let client;
-        const road = document.getElementById('mapRoad');
-        const botMarkers = {};
+        const road = document.getElementById('mapRoad'); 
+        const botMarkers = {};  
         const obstacleMarkers = {};
 
         let nextLocalObstacleId = 0;
 
-        const pendingObstacles = [];
+        const pendingObstacles = []; // stores obstacles that have been reported but not yet matched to a known ID
 
-        const MATCH_THRESHOLD = 0.3;
+        const MATCH_THRESHOLD = 0.3; // distance threshold in meters for matching a new obstacle report to an existing obstacle marker
 
         const botColorPalette = ["#0C5454", "#2E8B57", "#5D4037"];
         const botColors = {};
@@ -367,8 +367,8 @@
             return botColors[id];
         }
 
-        const BOT_ROLES = { '1': 'Scout', '2': 'Bulldozer' };
-        const HOME_THRESHOLD = 0.2;
+        const BOT_ROLES = { '1': 'Scout', '2': 'Bulldozer', '4' : 'Scout' };
+        const HOME_THRESHOLD = 0.6; // distance threshold in meters for considering a bot to be at home, change based on how long you let the bots drive/speed etc 
         const lastDistances = {};
         const transientTimers = {};
         const botStatusCard = document.getElementById('botStatusCard');
@@ -377,25 +377,26 @@
             return Math.sqrt(x * x + y * y);
         }
 
-        function ensureBotStatusBlock(id) { // creates the status block DOM for a bot the first time we hear from it
-            if (document.getElementById('botStatus-' + id)) return;
+        function ensureBotStatusBlock(id) { // creates the status block DOM for a bot the first time its heard from 
+            if (document.getElementById('botStatus-' + id)) return; // already exists
 
             const role = BOT_ROLES[id] || ('Bot ' + id);
             const block = document.createElement('div');
             block.className = 'status-block';
             block.id = 'botStatus-' + id;
+            // set the inner html of the block to include a colored dot, the bots role and ID, and placeholders for status text and subtext
             block.innerHTML = `
                 <div class="status-name-row">
                     <div class="status-dot" style="background:${getColorForBot(id)}"></div>
                     <div class="status-name">${role} (bot ${id})</div>
                 </div>
                 <div class="status-text">No data yet</div>
-                <div class="status-sub"></div>
+                <div class="status-sub"></div> 
             `;
             botStatusCard.appendChild(block);
         }
 
-        function renderBotStatus(id, text, sub) { // writes the given status text/subtext into a bot's status block
+        function renderBotStatus(id, text, sub) { // writes the given status text into a bot's status block
             ensureBotStatusBlock(id);
             const block = document.getElementById('botStatus-' + id);
             block.querySelector('.status-text').textContent = text;
@@ -414,29 +415,30 @@
         }
 
         function updateBotMovementStatus(id, x, y) { // derives a movement-based status from position deltas since we have no explicit state field
-            if (transientTimers[id]) return;
+            if (transientTimers[id]) return; // if a transient status is active, don't override it
 
             const dist = distanceToHome(x, y);
             const prevDist = lastDistances[id];
             lastDistances[id] = dist;
 
-            const role = BOT_ROLES[id] || ('Bot ' + id);
-            const coords = `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+            const role = BOT_ROLES[id] || ('Bot ' + id); 
+            const coords = `(${x.toFixed(2)}, ${y.toFixed(2)})`; // format the coordinates for display
 
+            // if the bot is within the home threshold, consider it "at home"
             if (dist <= HOME_THRESHOLD) {
                 renderBotStatus(id, 'At home', coords);
                 return;
             }
-
+            // if the bot has moved closer to home since the last update, consider it "returning home"
             if (prevDist !== undefined && dist < prevDist - 0.01) {
                 renderBotStatus(id, 'Returning home', coords);
-            } else {
+            } else { // if the bot has moved away from home or hasn't moved significantly, consider it "exploring" or "working" based on its role
                 const activeLabel = role === 'Scout' ? 'Exploring' : 'Working';
                 renderBotStatus(id, activeLabel, coords);
             }
         }
 
-        function addObstacleLogEntry(text) { // prepends a timestamped line to the log, trimming old entries so the panel doesn't grow forever
+        function addObstacleLogEntry(text) { // adds a new entry to the obstacle event log, removing the "no events" placeholder if present
             const log = document.getElementById('obstacleLog');
             const empty = document.getElementById('obstacleLogEmpty');
             if (empty) empty.remove();
@@ -455,7 +457,7 @@
         document.getElementById('connectBtn').addEventListener('click', connect);
 
         function connect() { // connects to the MQTT server and sets up subscriptions and message handling
-            const url = "ws://192.168.212.106:9001"; // mqtt server url
+            const url = "ws://172.20.10.11:9001"; // mqtt server url
 
             if (client && client.connected) return;
 
@@ -504,8 +506,8 @@
                         return;
                     }
 
-                    if (topic === "OR/MOV") {
-                        // OR/MOV uses the {id, payload} wrapper
+                    // handle obstacle movement updates
+                    if (topic === "OR/MOV") { 
                         const obstacle = JSON.parse(payload.toString()); // parse the payload to get the obstacle's id and position
                         const id = obstacle.id;
                         const pos = obstacle.payload && obstacle.payload.position;
@@ -628,7 +630,7 @@
                 client.publish(`bot/${id}/COMMANDS`, "ESTOP");
             });
 
-            alert('all bots stopped.');
+            alert('stop all bots?');
         });
 
         // clear obstacles button functionality
