@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Forest Xplore</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kablammo&family=Kalam:wght@400;700&display=swap');
+        /*import google fonts for the dashboard*/
+
+        :root {
+            --dark-green: #363a28;
+            --mint: #e6d2ba;
+            --olive: #625D3F;
+            --cream: #EBE3D8;
+            --text-dark: #40523e;
+            --white: #FFFFFF;
+            --brown: #522a0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Kalam', cursive;
+            height: 100vh;
+            overflow: hidden;
+            background: #F2F2F2;
+        }
+
+        .landing {
+            height: 100vh;
+            background: var(--dark-green);
+            background-image: url('PNW.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 8%;
+            transition: opacity .4s ease;
+        }
+
+        .landing.hidden {
+            display: none;
+        }
+
+        .landing-content {
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .logo-title {
+            font-family: 'Kablammo', cursive;
+            font-size: 64px;
+            color: var(--cream);
+            line-height: 1;
+        }
+
+        .subtitle {
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            font-size: 16px;
+            color: var(--cream);
+            margin-top: 8px;
+            margin-bottom: 36px;
+        }
+
+        .connect-btn {
+            background: var(--olive);
+            color: var(--white);
+            border: none;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            font-size: 18px;
+            padding: 14px 40px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform .15s ease, background .2s ease;
+        }
+
+        .connect-btn:hover {
+            background: #7c8a5d;
+            transform: translateY(-1px);
+        }
+
+        .connect-btn:active {
+            transform: translateY(1px);
+        }
+
+        .dashboard-screen {
+            height: 100vh;
+            background: var(--mint);
+            padding: 28px 40px;
+            display: none;
+        }
+
+        .dashboard-screen.visible {
+            display: block;
+        }
+
+        .dash-header {
+            font-family: 'Kablammo', cursive;
+            font-size: 26px;
+            color: var(--olive);
+            margin-bottom: 30px;
+        }
+
+        .panels {
+            display: flex;
+            align-items: flex-start;
+            gap: 36px;
+        }
+
+        .panel-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .panel-col.map-col {
+            flex: 2;
+            align-items: stretch;
+        }
+
+        .panel-label {
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            font-size: 20px;
+            color: var(--olive);
+            margin-bottom: 14px;
+            text-align: center;
+        }
+
+        .map-box {
+            height: 400px;
+            border-radius: 24px;
+            overflow: hidden;
+            display: flex;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .map-half {
+            flex: 1;
+            background: var(--dark-green);
+        }
+
+        .map-road {
+            width: 70px;
+            background: #D3D3D3;
+            flex-shrink: 0;
+            position: relative;
+            /* to position the road lines */
+        }
+
+        .side-card {
+            width: 180px;
+            height: 400px;
+            background: var(--white);
+            border: 2px solid var(--dark-green);
+            border-radius: 24px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Obstacle event log panel */
+        .log-card {
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 12.5px;
+            color: var(--text-dark);
+        }
+
+        .log-entry {
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e5ece2;
+            line-height: 1.35;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            display: block;
+            font-size: 10.5px;
+            color: var(--olive);
+            margin-bottom: 1px;
+        }
+
+        .log-empty {
+            font-size: 12.5px;
+            color: #a9b6a2;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        /* Bot status panel */
+        .status-card {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            overflow-y: auto;
+        }
+
+        .status-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-name-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-name {
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            font-size: 15px;
+            color: var(--olive);
+        }
+
+        .status-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .status-sub {
+            font-size: 11.5px;
+            color: #7a8a75;
+            margin-top: 2px;
+        }
+
+        .emergency-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 24px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .emergency-row:hover .emergency-text {
+            text-decoration: underline;
+        }
+
+        .warning-icon {
+            width: 38px;
+            height: 34px;
+        }
+
+        .emergency-text {
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: #1a1a1a;
+        }
+
+        .bot {
+            width: 12px;
+            height: 12px;
+            background: var(--dark-green);
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+        }
+
+        .obstacle {
+            width: 18px;
+            height: 6px;
+            background: var(--brown);
+            position: absolute;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- landing screen to connect to mqtt -->
+    <div class="landing" id="landingScreen">
+        <div class="landing-content">
+            <div class="logo-title">Forest Xplore</div>
+            <div class="subtitle">Scout and bulldozer dashboard</div>
+            <button class="connect-btn" id="connectBtn">Connect</button>
+        </div>
+    </div>
+
+    <!-- the dashboard -->
+    <div class="dashboard-screen" id="dashboardScreen">
+        <div class="dash-header">Forest Xplore</div>
+
+        <div class="panels">
+            <div class="panel-col map-col">
+                <div class="panel-label">Map</div>
+                <div class="map-box">
+                    <div class="map-half"></div>
+                    <div class="map-road" id="mapRoad"></div>
+                    <div class="map-half"></div>
+                </div>
+                <div class="emergency-row" id="emergencyStop">
+                    <svg class="warning-icon" viewBox="0 0 40 36" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="20,2 38,33 2,33" fill="#F5D80E" stroke="#E03B2E" stroke-width="2.5"
+                            stroke-linejoin="round" />
+                        <text x="20" y="27" font-family="Kalam, cursive" font-weight="700" font-size="18" fill="#111"
+                            text-anchor="middle">!</text>
+                    </svg>
+                    <div class="emergency-text">Emergency stop</div>
+                </div>
+                <div class="emergency-row" id="clearObstacles">
+                    <div class="emergency-text">Clear obstacles</div>
+                </div>
+                <div class="emergency-row" id="clearBots">
+                    <div class="emergency-text">Clear bots</div>
+                </div>
+            </div>
+
+            <div class="panel-col">
+                <div class="panel-label">Obstacles</div>
+                <div class="side-card log-card" id="obstacleLog">
+                    <div class="log-empty" id="obstacleLogEmpty">No obstacle events yet</div>
+                </div>
+            </div>
+
+            <div class="panel-col">
+                <div class="panel-label">Bot status</div>
+                <div class="side-card status-card" id="botStatusCard">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <script>
+        let client;
+        const road = document.getElementById('mapRoad'); 
+        const botMarkers = {};  
+        const obstacleMarkers = {};
+
+        let nextLocalObstacleId = 0;
+
+        const pendingObstacles = []; // stores obstacles that have been reported but not yet matched to a known ID
+
+        const MATCH_THRESHOLD = 0.3; // distance threshold in meters for matching a new obstacle report to an existing obstacle marker
+
+        const botColorPalette = ["#0C5454", "#2E8B57", "#5D4037"];
+        const botColors = {};
+        let nextBotColorIndex = 0;
+
+        function getColorForBot(id) { // assigns a color to each bot based on its ID, cycling through the palette
+            if (!botColors[id]) {
+                botColors[id] = botColorPalette[nextBotColorIndex % botColorPalette.length];
+                nextBotColorIndex++;
+            }
+            return botColors[id];
+        }
+
+        const BOT_ROLES = { '1': 'Scout', '2': 'Bulldozer', '4' : 'Scout' };
+        const HOME_THRESHOLD = 0.6; // distance threshold in meters for considering a bot to be at home, change based on how long you let the bots drive/speed etc 
+        const lastDistances = {};
+        const transientTimers = {};
+        const botStatusCard = document.getElementById('botStatusCard');
+
+        function distanceToHome(x, y) { // straight-line distance from the assumed home point (0,0)
+            return Math.sqrt(x * x + y * y);
+        }
+
+        function ensureBotStatusBlock(id) { // creates the status block DOM for a bot the first time its heard from 
+            if (document.getElementById('botStatus-' + id)) return; // already exists
+
+            const role = BOT_ROLES[id] || ('Bot ' + id);
+            const block = document.createElement('div');
+            block.className = 'status-block';
+            block.id = 'botStatus-' + id;
+            // set the inner html of the block to include a colored dot, the bots role and ID, and placeholders for status text and subtext
+            block.innerHTML = `
+                <div class="status-name-row">
+                    <div class="status-dot" style="background:${getColorForBot(id)}"></div>
+                    <div class="status-name">${role} (bot ${id})</div>
+                </div>
+                <div class="status-text">No data yet</div>
+                <div class="status-sub"></div> 
+            `;
+            botStatusCard.appendChild(block);
+        }
+
+        function renderBotStatus(id, text, sub) { // writes the given status text into a bot's status block
+            ensureBotStatusBlock(id);
+            const block = document.getElementById('botStatus-' + id);
+            block.querySelector('.status-text').textContent = text;
+            if (sub !== undefined) {
+                block.querySelector('.status-sub').textContent = sub;
+            }
+        }
+
+        function setTransientStatus(id, text, durationMs) { // sets a temporary status for a bot that will be cleared after the given duration, allowing movement-based status to resume
+            renderBotStatus(id, text);
+            if (transientTimers[id]) clearTimeout(transientTimers[id]);
+            transientTimers[id] = setTimeout(() => {
+                transientTimers[id] = null;
+                // next telemetry message will recompute the real movement-based status
+            }, durationMs);
+        }
+
+        function updateBotMovementStatus(id, x, y) { // derives a movement-based status from position deltas since we have no explicit state field
+            if (transientTimers[id]) return; // if a transient status is active, don't override it
+
+            const dist = distanceToHome(x, y);
+            const prevDist = lastDistances[id];
+            lastDistances[id] = dist;
+
+            const role = BOT_ROLES[id] || ('Bot ' + id); 
+            const coords = `(${x.toFixed(2)}, ${y.toFixed(2)})`; // format the coordinates for display
+
+            // if the bot is within the home threshold, consider it "at home"
+            if (dist <= HOME_THRESHOLD) {
+                renderBotStatus(id, 'At home', coords);
+                return;
+            }
+            // if the bot has moved closer to home since the last update, consider it "returning home"
+            if (prevDist !== undefined && dist < prevDist - 0.01) {
+                renderBotStatus(id, 'Returning home', coords);
+            } else { // if the bot has moved away from home or hasn't moved significantly, consider it "exploring" or "working" based on its role
+                const activeLabel = role === 'Scout' ? 'Exploring' : 'Working';
+                renderBotStatus(id, activeLabel, coords);
+            }
+        }
+
+        function addObstacleLogEntry(text) { // adds a new entry to the obstacle event log, removing the "no events" placeholder if present
+            const log = document.getElementById('obstacleLog');
+            const empty = document.getElementById('obstacleLogEmpty');
+            if (empty) empty.remove();
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">${time}</span>${text}`;
+            log.insertBefore(entry, log.firstChild);
+
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        document.getElementById('connectBtn').addEventListener('click', connect);
+
+        function connect() { // connects to the MQTT server and sets up subscriptions and message handling
+            const url = "ws://172.20.10.11:9001"; // mqtt server url
+
+            if (client && client.connected) return;
+
+            client = mqtt.connect(url);
+
+            client.on('connect', () => {
+                console.log("connected!");
+
+                client.subscribe("bot/#");
+                client.subscribe("OR/#");
+
+                document.getElementById('landingScreen').classList.add('hidden');
+                document.getElementById('dashboardScreen').classList.add('visible');
+
+                client.publish("OR/COMMANDS", "SPIT");
+            });
+
+            client.on('error', (err) => { // handles connection errors by alerting the user and ending the client connection
+                alert("oops! could not connect to server");
+                client.end();
+            });
+
+            client.on('message', (topic, payload) => { // handles incoming messages from the MQTT server, updating the dashboard based on the topic and payload
+                try {
+                    if (topic === "OR/NEW") {
+                        const payloadObj = JSON.parse(payload.toString()); // parse the payload to get the position of the new obstacle
+                        const pos = payloadObj.position;
+                        if (!pos) return;
+
+                        const tempId = "local-" + (nextLocalObstacleId++);
+
+                        const marker = document.createElement("div");
+                        marker.className = "obstacle";
+                        road.appendChild(marker);
+                        obstacleMarkers[tempId] = marker;
+
+                        const roadWidth = road.clientWidth;
+                        const roadHeight = road.clientHeight;
+                        marker.style.top = (roadHeight - (pos.x / 6) * roadHeight) + "px"; // road is 6meters long in dashboard
+                        marker.style.left = (roadWidth / 2 + pos.y * roadWidth) + "px";
+
+                        pendingObstacles.push({ tempId, marker, x: pos.x, y: pos.y });
+
+                        addObstacleLogEntry(`Obstacle found at (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`);
+                        setTransientStatus('1', 'Found obstacle!', 4000);
+                        return;
+                    }
+
+                    // handle obstacle movement updates
+                    if (topic === "OR/MOV") { 
+                        const obstacle = JSON.parse(payload.toString()); // parse the payload to get the obstacle's id and position
+                        const id = obstacle.id;
+                        const pos = obstacle.payload && obstacle.payload.position;
+                        if (!pos) return;
+
+                        let marker = obstacleMarkers[id];
+
+                        if (!marker) {
+                            let bestMatch = null;
+                            let bestDist = Infinity;
+                            pendingObstacles.forEach(p => {
+                                const dist = Math.hypot(p.x - pos.x, p.y - pos.y);
+                                if (dist < MATCH_THRESHOLD && dist < bestDist) {
+                                    bestDist = dist;
+                                    bestMatch = p;
+                                }
+                            });
+
+                            if (bestMatch) {
+                                marker = bestMatch.marker;
+                                delete obstacleMarkers[bestMatch.tempId];
+                                obstacleMarkers[id] = marker;
+                                pendingObstacles.splice(pendingObstacles.indexOf(bestMatch), 1);
+                            } else {
+                                marker = document.createElement("div");
+                                marker.className = "obstacle";
+                                road.appendChild(marker);
+                                obstacleMarkers[id] = marker;
+                            }
+                        }
+
+                        const roadWidth = road.clientWidth;
+                        const roadHeight = road.clientHeight;
+                        marker.style.top = (roadHeight - (pos.x / 6) * roadHeight) + "px";
+                        marker.style.left = (roadWidth / 2 + pos.y * roadWidth) + "px";
+
+                        addObstacleLogEntry(`Obstacle ${id} moved to (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`);
+                        return;
+                    }
+
+                    if (topic === "OR/REM") { // remove an obstacle marker from the dashboard
+                        const id = payload.toString();
+                        if (obstacleMarkers[id]) { // if the marker exists, remove it from the road and delete it from the obstacleMarkers object
+                            road.removeChild(obstacleMarkers[id]);
+                            delete obstacleMarkers[id];
+                        }
+
+                        addObstacleLogEntry(`Obstacle ${id} removed`);
+                        setTransientStatus('2', 'Removing obstacle', 4000);
+                        return;
+                    }
+
+                    if (topic === "OR/COMPLETE_REGISTRY") { // full resync of all obstacles, replacing the current set with the new registry
+                        const registry = JSON.parse(payload.toString());
+
+                        Object.values(obstacleMarkers).forEach(marker => road.removeChild(marker)); // remove all existing markers from the road
+                        for (const key in obstacleMarkers) delete obstacleMarkers[key]; // clear the obstacleMarkers object
+                        pendingObstacles.length = 0; // any obstacles we were still waiting to match are now resolved by this resync
+
+                        const roadWidth = road.clientWidth;
+                        const roadHeight = road.clientHeight;
+
+                        registry.forEach(obstacle => { // for each obstacle in the registry, create a new marker and position it on the road
+                            const id = obstacle.id;
+                            const pos = obstacle.payload && obstacle.payload.position;
+                            if (!pos) return;
+
+                            const marker = document.createElement("div");
+                            marker.className = "obstacle";
+                            marker.style.top = (roadHeight - (pos.x / 6) * roadHeight) + "px";
+                            marker.style.left = (roadWidth / 2 + pos.y * roadWidth) + "px";
+                            road.appendChild(marker);
+                            obstacleMarkers[id] = marker;
+                        });
+
+                        addObstacleLogEntry(`Synced obstacle registry (${registry.length} obstacle${registry.length === 1 ? '' : 's'})`);
+                        return;
+                    }
+
+                    // handle bot telemetry updates
+                    const parts = topic.split('/');
+                    if (parts[0] === "bot" && parts.length === 2) {
+                        const id = parts[1];
+                        const data = JSON.parse(payload.toString());
+                        if (!data.position) return; // telemetry can update fields independently
+
+                        const x = data.position.x;
+                        const y = data.position.y;
+
+                        let bot = botMarkers[id];
+                        if (!bot) { // if the bot marker doesn't exist yet, create it and assign a color based on its ID
+                            bot = document.createElement("div");
+                            bot.className = "bot";
+                            bot.style.background = getColorForBot(id);
+                            road.appendChild(bot);
+                            botMarkers[id] = bot;
+                        }
+
+                        const roadWidth = road.clientWidth;
+                        const roadHeight = road.clientHeight;
+                        bot.style.top = (roadHeight - (x / 6) * roadHeight) + "px";
+                        bot.style.left = (roadWidth / 2 + y * roadWidth) + "px";
+
+                        updateBotMovementStatus(id, x, y);
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+        }
+
+        // emergency stop button functionality
+        const bots = ['1', '2'];
+        document.getElementById('emergencyStop').addEventListener('click', () => {
+            if (!client || !client.connected) {
+                alert('oops! not connected to server');
+                return;
+            }
+            bots.forEach(id => {
+                client.publish(`bot/${id}/COMMANDS`, "ESTOP");
+            });
+
+            alert('stop all bots?');
+        });
+
+        // clear obstacles button functionality
+        document.getElementById('clearObstacles').addEventListener('click', clearObstacleRegistry);
+        function clearObstacleRegistry() {
+            if (!client || !client.connected) {
+                alert('oops! not connected to server');
+                return;
+            }
+
+            client.publish("OR/COMMANDS", "CLEAR");
+
+            Object.values(obstacleMarkers).forEach(marker => road.removeChild(marker));
+            for (const key in obstacleMarkers) delete obstacleMarkers[key];
+            pendingObstacles.length = 0;
+
+            addObstacleLogEntry(`Cleared obstacle registry`);
+
+            setTimeout(() => {
+                if (client && client.connected) {
+                    client.publish("OR/COMMANDS", "SPIT");
+                }
+            }, 500);
+        }
+
+        // clear bots button functionality
+        document.getElementById('clearBots').addEventListener('click', clearBots); 
+        function clearBots() {
+            Object.values(botMarkers).forEach(marker => road.removeChild(marker));
+            for (const key in botMarkers) delete botMarkers[key];
+            for (const key in lastDistances) delete lastDistances[key];
+            for (const id in transientTimers) {
+                if (transientTimers[id]) clearTimeout(transientTimers[id]);
+                transientTimers[id] = null;
+            }
+            botStatusCard.innerHTML = '';
+        }
+
+
+    </script>
+</body>
+
+</html>

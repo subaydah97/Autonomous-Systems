@@ -27,8 +27,10 @@
           jointParameters BallJointParameters {
           }
           jointParameters2 JointParameters {
+            axis 1 0 0
           }
           jointParameters3 JointParameters {
+            axis 0 1 0
           }
           endPoint Solid {
             children [

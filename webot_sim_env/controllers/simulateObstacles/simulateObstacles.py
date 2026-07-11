@@ -43,7 +43,7 @@ def on_message(client, userdata, msg):
             obstacles = json.loads(msg.payload)
 
             for obstacle in obstacles:
-                print(PRFX,obstacle)
+                print(PRFX,"Spit:Creating",obstacle)
                 try:
                     create_obstacle(obstacle)
                 except AttributeError as e:
@@ -62,6 +62,7 @@ def on_message(client, userdata, msg):
             try:
                 formattedObstacle = {"id":get_new_id(),"payload":obstacle}
                 create_obstacle(formattedObstacle)
+                print(PRFX,"Created:",formattedObstacle)
             except Exception as exception:
                 print(PRFX,msg.topic,exception)
                 remove_obstacle(obstacle["id"])                 
@@ -87,6 +88,7 @@ def get_new_id(obstacleCache=obstacleCache):
         newID = 0
     return newID
 
+# Obstacle format ought to be {"id":<id>, "payload":<obstacle format outlined in IDD>}
 def create_obstacle(obstacle):
     
     if isinstance(obstacle["payload"],str): print(PRFX,"Atribute error caught. Object not created"); return

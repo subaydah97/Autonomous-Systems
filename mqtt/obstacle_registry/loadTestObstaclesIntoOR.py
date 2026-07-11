@@ -6,7 +6,7 @@ import sys
 
 HOSTNAME = "localhost"
 
-fileWithTestData = open("obstacleCommunicationTestData.json","r")
+fileWithTestData = open("../obstacleCommunicationTestData.json","r")
 obstacles = json.load(fileWithTestData)
 
 #print(f"parsedJson_{type(obstacles)}={obstacles}")
