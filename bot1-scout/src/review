@@ -1,0 +1,31 @@
+Code review: Chariot controllers
+	Bot scout
+		main
+		1. There's no readme present.
+		2. The main file extends .h header files. Why not the cpp .hpp header files?
+		3. Why are there .cpp files for all the headers?
+		
+		Communication.cpp
+		1. nice and clear.
+		2. missing some comments
+		3. this is what I wrote auxiliary.hpp for
+		
+		DriveSystem.cpp
+		1. minimal encoder interval is a nice touch
+		2. could have enumerated movement direction
+		3. emergency stop looks good
+		4. not clear what will cause emergency stops
+		
+		Obstacle handler
+		1. Interesting choice to use a if-x-return statement that early in the obstacle avoidance routine. I'm skeptic, it makes it clear that this routine depends on the reading from the sensor, and it might make it less obvious why this function isn't happening if an error would occur there.
+		2. error handling looks good
+		3. nice headings commented in at line 32
+		4. nice use of enumerations on line 34
+		5. Good comments, I find it very clear how the obstacle avoidance should work.
+		
+		Robot state.cpp
+		1. why is this a .cpp file? As far as I can tell, it resembles a header.
+		2. just had a look at robotstate.h, I'm not sure why you wouldn't define all the stuff you do in this file. It's now harder to get an overview of the robot state data.
+		
+		Telemetry.cpp
+		1. You don't explain why you divide by 100 at line 66
